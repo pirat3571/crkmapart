@@ -1,1144 +1,819 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CRK Map Art Creator</title>
+<title>CRK Map Art Planner</title>
 <style>
-:root {
-  --bg: #0d0c15;
-  --surf: #17152a;
-  --surf2: #1f1c32;
-  --surf3: #27243e;
-  --bord: #312e50;
-  --accent: #f472b6;
-  --accent2: #a78bfa;
-  --accentd: #c2185b;
-  --text: #f0edf8;
-  --text2: #9d93c4;
-  --text3: #6b6090;
-  --green: #4ade80;
-  --red: #f87171;
-  --yellow: #fbbf24;
-  --r: 8px;
-  --rl: 14px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column}
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── HEADER ── */
-header{
-  height:48px;flex-shrink:0;
-  background:var(--surf);border-bottom:1px solid var(--bord);
-  display:flex;align-items:center;gap:12px;padding:0 20px;
-}
-header h1{font-size:16px;font-weight:700;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-header .sub{font-size:11px;color:var(--text3);margin-left:auto}
+  :root {
+    --bg: #0d0f14;
+    --bg2: #161921;
+    --bg3: #1e2230;
+    --accent: #f4a83a;
+    --accent2: #e87d2a;
+    --text: #e8e4d9;
+    --muted: #7a7d8a;
+    --border: #2a2e3d;
+  }
 
-/* ── LAYOUT ── */
-.app{flex:1;display:grid;grid-template-columns:260px 1fr 290px;overflow:hidden}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── PANELS ── */
-.panel{
-  background:var(--surf);overflow-y:auto;
-  padding:14px 14px 20px;
-  border-right:1px solid var(--bord);
-}
-.panel.right{border-right:none;border-left:1px solid var(--bord)}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-.section{margin-bottom:18px}
-.sec-hd{
-  font-size:10px;font-weight:700;color:var(--text3);
-  text-transform:uppercase;letter-spacing:1.2px;
-  margin-bottom:9px;
-}
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
 
-/* ── UPLOAD ── */
-.drop{
-  border:2px dashed var(--bord);border-radius:var(--rl);
-  padding:20px 12px;text-align:center;cursor:pointer;
-  transition:.2s;background:var(--surf2);margin-bottom:10px;
-}
-.drop:hover,.drop.over{border-color:var(--accent);background:rgba(244,114,182,.06)}
-.drop-ico{font-size:28px;margin-bottom:6px}
-.drop p{font-size:12px;color:var(--text2)}
-.drop strong{color:var(--accent)}
-#fInput{display:none}
-#srcPrev{width:100%;border-radius:var(--r);margin-bottom:10px;display:none}
+  header h1 { font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+  header .subtitle { color: var(--muted); font-size: 13px; font-family: 'JetBrains Mono', monospace; }
 
-/* ── BUTTONS ── */
-.btn{
-  display:flex;align-items:center;justify-content:center;gap:5px;
-  width:100%;padding:8px 12px;border-radius:var(--r);
-  border:1px solid var(--bord);background:var(--surf2);
-  color:var(--text);font-size:12px;cursor:pointer;
-  transition:.15s;margin-bottom:6px;
-}
-.btn:hover{background:var(--surf3);border-color:var(--text3)}
-.btn.prim{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-weight:700;font-size:13px}
-.btn.prim:hover{filter:brightness(1.1)}
-.btn.exp{background:var(--surf2);border-color:var(--green);color:var(--green);font-weight:600}
-.btn.exp:hover{background:rgba(74,222,128,.1)}
-.btn:disabled{opacity:.35;cursor:not-allowed}
+  .main { display: flex; flex: 1; overflow: hidden; }
 
-/* ── SETTINGS ── */
-.sett{margin-bottom:11px}
-.sett label{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:5px}
-.sett label span{color:var(--accent);font-weight:600}
-input[type=range]{width:100%;accent-color:var(--accent);height:4px}
-select{
-  width:100%;padding:6px 9px;border-radius:var(--r);
-  border:1px solid var(--bord);background:var(--surf2);
-  color:var(--text);font-size:12px;
-}
+  .sidebar {
+    width: 270px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+    z-index: 5;
+  }
 
-/* ── TILE GRID ── */
-.tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px}
-.tile-item{
-  display:flex;align-items:center;gap:6px;
-  padding:5px 7px;border-radius:6px;
-  border:1px solid var(--bord);background:var(--surf2);
-  font-size:11px;cursor:pointer;transition:.15s;
-  position:relative;user-select:none;
-}
-.tile-item:hover{border-color:var(--accent2)}
-.tile-item.on{border-color:var(--accent);background:rgba(244,114,182,.07)}
-.tile-item .sw{width:16px;height:16px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.12)}
-.tile-item .tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;line-height:1.3}
-.tile-item .cnt{
-  font-size:9px;background:var(--accent);color:#fff;
-  border-radius:8px;padding:1px 4px;min-width:18px;text-align:center;flex-shrink:0;
-}
+  .sidebar-section { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .sidebar-section h3 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
 
-/* ── ROW BUTTONS ── */
-.row-btns{display:flex;gap:5px}
-.row-btns .btn{font-size:11px;padding:5px 8px}
+  .upload-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg3); border: 1px dashed var(--border); border-radius: 6px;
+    padding: 8px 10px; cursor: pointer; width: 100%;
+    color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 500;
+    transition: border-color 0.2s, background 0.2s; text-align: left;
+  }
+  .upload-btn:hover { border-color: var(--accent); background: rgba(244,168,58,0.06); }
+  .upload-btn .icon { font-size: 16px; color: var(--accent); flex-shrink: 0; }
+  .upload-btn .hint { font-size: 10px; color: var(--muted); margin-top: 1px; display: block; }
 
-/* ── TABS ── */
-.tabs{display:flex;gap:2px;background:var(--surf2);border-radius:var(--r);padding:3px;margin-bottom:12px}
-.tab{flex:1;padding:5px;border-radius:6px;border:none;background:none;color:var(--text2);font-size:11px;cursor:pointer;transition:.15s}
-.tab.on{background:var(--surf3);color:var(--text);font-weight:600}
+  .source-preview { margin-top: 8px; width: 100%; border-radius: 5px; overflow: hidden; display: none; border: 1px solid var(--border); }
+  .source-preview img { width: 100%; display: block; }
 
-/* ── CANVAS AREA ── */
-.canvas-area{
-  background:var(--bg);position:relative;
-  overflow:hidden;display:flex;align-items:center;justify-content:center;
-}
-#mc{display:none;cursor:grab;image-rendering:pixelated}
-#mc:active{cursor:grabbing}
+  .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 6px; }
 
-.empty{text-align:center;color:var(--text2)}
-.empty .ico{font-size:48px;margin-bottom:10px}
-.empty h2{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
-.empty p{font-size:12px;line-height:1.6}
-.empty strong{color:var(--accent)}
+  .tile-item {
+    position: relative; aspect-ratio: 1; border-radius: 3px; overflow: hidden;
+    cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s;
+  }
+  .tile-item:hover { transform: scale(1.1); border-color: var(--accent); }
+  .tile-item.active { border-color: var(--accent); outline: 1px solid var(--accent); }
+  .tile-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tile-item .tile-name {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.8); font-size: 7px; text-align: center;
+    padding: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .tile-item:hover .tile-name { opacity: 1; }
 
-.hud{
-  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
-  background:rgba(23,21,42,.9);border:1px solid var(--bord);
-  border-radius:20px;padding:5px 14px;font-size:11px;color:var(--text2);
-  white-space:nowrap;display:none;pointer-events:none;
-}
-.zoom-c{position:absolute;bottom:14px;right:14px;display:flex;gap:5px}
-.zb{
-  width:30px;height:30px;border-radius:7px;border:1px solid var(--bord);
-  background:var(--surf);color:var(--text);font-size:15px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:.15s;
-}
-.zb:hover{background:var(--surf2)}
+  .counts-list { list-style: none; margin-top: 4px; max-height: 180px; overflow-y: auto; }
+  .counts-list li { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .counts-list li:last-child { border: none; }
+  .counts-list .tile-thumb { width: 20px; height: 20px; border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+  .counts-list .tile-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .counts-list .name { flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .counts-list .count { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--accent); font-size: 11px; }
 
-.loader{
-  position:absolute;inset:0;background:rgba(13,12,21,.82);
-  display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:20;
-}
-.spin{width:34px;height:34px;border:3px solid var(--bord);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-.loader p{font-size:12px;color:var(--text2)}
+  .canvas-area {
+    flex: 1; overflow: hidden; position: relative;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(244,168,58,0.04) 0%, transparent 60%),
+      var(--bg);
+    cursor: grab;
+  }
+  .canvas-area.grabbing { cursor: grabbing; }
+  .canvas-area.drawing { cursor: crosshair; }
 
-/* tile tooltip on hover over canvas */
-#ttip{
-  position:fixed;background:var(--surf2);border:1px solid var(--bord);
-  border-radius:var(--r);padding:6px 10px;font-size:11px;pointer-events:none;
-  z-index:99;display:none;max-width:200px;
-}
-#ttip .tname{font-weight:700;color:var(--accent);margin-bottom:2px}
-#ttip .tinfo{color:var(--text2)}
+  #map-canvas { position: absolute; top: 0; left: 0; image-rendering: pixelated; }
 
-/* ── RIGHT PANEL ── */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
-.stat-c{background:var(--surf2);border:1px solid var(--bord);border-radius:var(--r);padding:9px 11px}
-.stat-c .sl{font-size:10px;color:var(--text3);margin-bottom:2px}
-.stat-c .sv{font-size:22px;font-weight:700;color:var(--accent)}
+  .tooltip {
+    position: fixed; background: var(--bg2); border: 1px solid var(--accent);
+    border-radius: 5px; padding: 4px 9px; font-size: 12px; pointer-events: none;
+    opacity: 0; transition: opacity 0.1s; z-index: 100; white-space: nowrap;
+    color: var(--accent); font-weight: 600;
+  }
 
-.used-list{display:flex;flex-direction:column;gap:4px}
-.used-row{
-  display:flex;align-items:center;gap:7px;
-  background:var(--surf2);border:1px solid var(--bord);
-  border-radius:6px;padding:6px 8px;font-size:11px;
-}
-.used-row .sw{width:14px;height:14px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.1)}
-.used-row .rname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.used-row .rcnt{font-size:10px;background:var(--surf3);border-radius:10px;padding:2px 6px;color:var(--text2)}
-.pbar{height:2px;background:var(--bord);border-radius:1px;margin-top:3px;overflow:hidden}
-.pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:1px}
+  .toolbar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tool-btn {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 9px; color: var(--text); font-family: 'Rajdhani', sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  }
+  .tool-btn:hover { border-color: var(--accent); background: rgba(244,168,58,0.08); }
+  .tool-btn.active { border-color: var(--accent); background: rgba(244,168,58,0.15); color: var(--accent); }
 
-.legend-box{display:flex;flex-wrap:wrap;gap:5px}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2)}
-.leg-sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+  .fill-all-btn {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    padding: 5px 10px; color: var(--text); font-family: 'Rajdhani', sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color 0.15s;
+    width: 100%; margin-top: 6px;
+  }
+  .fill-all-btn:hover { border-color: var(--accent); }
 
-hr.div{border:none;border-top:1px solid var(--bord);margin:12px 0}
+  .status-bar {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 5px 16px; display: flex; gap: 16px; align-items: center;
+    font-size: 11px; color: var(--muted); flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace; z-index: 10;
+  }
+  .status-bar span { color: var(--text); }
 
-.empty-sm{text-align:center;padding:20px 10px;color:var(--text3);font-size:11px}
+  .right-panel {
+    width: 185px; background: var(--bg2); border-left: 1px solid var(--border);
+    flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; z-index: 5;
+  }
+  .right-panel h3 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 12px 14px 6px; border-bottom: 1px solid var(--border); font-weight: 600; }
 
-/* custom tile input */
-.ctile-inp{display:flex;gap:5px;align-items:center;margin-top:8px}
-.ctile-inp input[type=color]{width:30px;height:28px;border:1px solid var(--bord);border-radius:5px;background:none;padding:2px;cursor:pointer}
-.ctile-inp input[type=text]{flex:1;padding:5px 8px;background:var(--surf2);border:1px solid var(--bord);border-radius:5px;color:var(--text);font-size:11px}
-.ctile-inp .btn{width:auto;margin:0;padding:5px 8px;font-size:12px}
+  .selected-tile-info { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .selected-tile-preview {
+    width: 100%; aspect-ratio: 1; border-radius: 5px; overflow: hidden;
+    border: 1px solid var(--border); background: var(--bg3);
+    display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px;
+  }
+  .selected-tile-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .selected-name { font-size: 13px; font-weight: 700; color: var(--accent); text-align: center; word-break: break-all; }
+  .slot-info { font-size: 10px; color: var(--muted); text-align: center; }
 
-/* wiki link */
-.wlink{font-size:10px;color:var(--accent2);text-decoration:none;display:block;text-align:right;margin-top:4px}
-.wlink:hover{text-decoration:underline}
+  .export-btn {
+    background: var(--accent2); border: none; border-radius: 4px; padding: 5px 12px;
+    color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.5px; transition: background 0.15s;
+  }
+  .export-btn:hover { background: var(--accent); }
 
-/* texture panel */
-.tex-drop{
-  border:2px dashed var(--bord);border-radius:10px;padding:14px 10px;
-  text-align:center;cursor:pointer;background:var(--surf2);transition:.2s;margin-bottom:10px;
-}
-.tex-drop:hover,.tex-drop.over{border-color:var(--accent2);background:rgba(167,139,250,.06)}
-.tex-drop p{font-size:11px;color:var(--text2)}
-.tex-drop strong{color:var(--accent2)}
-.tex-status{font-size:10px;color:var(--text3);margin-bottom:7px;min-height:14px}
-.tex-bar{height:3px;background:var(--bord);border-radius:2px;margin-bottom:8px;overflow:hidden;display:none}
-.tex-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width .2s}
-.tile-item .tex-thumb{width:16px;height:16px;border-radius:3px;flex-shrink:0;object-fit:cover;border:1px solid rgba(255,255,255,.12)}
+  input[type="file"] { display: none; }
 
-/* selected tile info box */
-#selInfo{
-  display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  background:rgba(23,21,42,.92);border:1px solid var(--accent);
-  border-radius:10px;padding:8px 14px;font-size:12px;
-  text-align:center;pointer-events:none;z-index:10;
-}
-#selInfo .sn{font-weight:700;color:var(--accent)}
-#selInfo .si{color:var(--text2);font-size:11px;margin-top:2px}
+  #dropzone-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(13,15,20,0.92);
+    z-index: 200; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: var(--accent);
+    letter-spacing: 2px; flex-direction: column; gap: 10px;
+  }
+  #dropzone-overlay.show { display: flex; }
+
+  .hint-overlay {
+    position: absolute; bottom: 12px; right: 12px;
+    background: rgba(22,25,33,0.85); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 12px; font-size: 11px; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; pointer-events: none; line-height: 1.7;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🍪 CRK Map Art Creator</h1>
-  <span class="sub">Cookie Run: Kingdom · Layout Designer</span>
+  <h1>🍪 CRK Map Art Planner</h1>
+  <span class="subtitle">64×60 · iso</span>
+  <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+    <button class="export-btn" id="export-btn">⬇ Экспорт PNG</button>
+  </div>
 </header>
 
-<div class="app">
-
-<!-- ════════════ LEFT PANEL ════════════ -->
-<div class="panel" id="lp">
-
-  <div class="section">
-    <div class="sec-hd">Image</div>
-    <div class="drop" id="dz" onclick="document.getElementById('fInput').click()">
-      <div class="drop-ico">🖼️</div>
-      <p>Click or <strong>drag & drop</strong> image here</p>
-      <p style="font-size:10px;margin-top:3px;color:var(--text3)">PNG · JPG · GIF · WebP</p>
-    </div>
-    <input type="file" id="fInput" accept="image/*">
-    <img id="srcPrev">
-  </div>
-
-  <hr class="div">
-
-  <div class="section">
-    <div class="sec-hd">Adjustments</div>
-    <div class="sett">
-      <label>Quantization method</label>
-      <select id="qSel">
-        <option value="nearest">Nearest color</option>
-        <option value="dither">Floyd-Steinberg dither</option>
-      </select>
-    </div>
-    <div class="sett">
-      <label>Brightness <span id="bv">0</span></label>
-      <input type="range" id="bs" min="-80" max="80" value="0" step="1">
-    </div>
-    <div class="sett">
-      <label>Contrast <span id="cv">0</span></label>
-      <input type="range" id="cs" min="-80" max="80" value="0" step="1">
-    </div>
-    <div class="sett">
-      <label>Saturation <span id="sv">0</span></label>
-      <input type="range" id="ss" min="-80" max="80" value="0" step="1">
-    </div>
-  </div>
-
-  <hr class="div">
-
-  <div class="section">
-    <div class="sec-hd">Tile palette</div>
-    <div class="tabs">
-      <button class="tab on" onclick="swTab('std',this)">Official</button>
-      <button class="tab" onclick="swTab('tex',this)">Textures</button>
-      <button class="tab" onclick="swTab('cus',this)">Custom</button>
+<div class="main">
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Исходное изображение</h3>
+      <label class="upload-btn" for="img-upload">
+        <span class="icon">🖼</span>
+        <div>Загрузить изображение<span class="hint">PNG / JPG / WEBP</span></div>
+      </label>
+      <input type="file" id="img-upload" accept="image/*">
+      <div class="source-preview" id="source-preview"><img id="source-img" src="" alt=""></div>
     </div>
 
-    <div id="tabStd">
-      <div class="tile-grid" id="tileGrid"></div>
-      <div class="row-btns">
-        <button class="btn" onclick="selAll()">✓ All</button>
-        <button class="btn" onclick="deselAll()">✗ None</button>
+    <div class="sidebar-section">
+      <h3>Палитра плиток</h3>
+      <label class="upload-btn" for="tiles-upload">
+        <span class="icon">🧱</span>
+        <div>Загрузить плитки (WebP)<span class="hint">Множественный выбор</span></div>
+      </label>
+      <input type="file" id="tiles-upload" accept=".webp,image/webp" multiple>
+      <div id="palette-grid" class="palette-grid"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Инструменты</h3>
+      <div class="toolbar">
+        <button class="tool-btn active" id="tool-draw">✏ Рисовать</button>
+        <button class="tool-btn" id="tool-erase">✕ Ластик</button>
+        <button class="tool-btn" id="tool-fill">⬛ Залить</button>
       </div>
+      <button class="fill-all-btn" id="apply-img">🎨 Применить изображение</button>
+      <button class="fill-all-btn" id="clear-btn" style="margin-top:4px;border-color:#c0392b;color:#e87d7d;">🗑 Очистить карту</button>
     </div>
 
-    <div id="tabTex" style="display:none">
-      <p style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.5">
-        Drop a folder of tile <strong>.webp / .png</strong> images here.<br>
-        The filename becomes the tile name. The app extracts the average color from each image automatically.
-      </p>
-      <div class="tex-drop" id="texDrop">
-        <p>📂 Drop <strong>folder or files</strong> here<br>or click to pick files</p>
-      </div>
-      <input type="file" id="texInput" multiple accept="image/*" style="display:none">
-      <div class="tex-bar" id="texBar"><div class="tex-bar-fill" id="texBarFill" style="width:0%"></div></div>
-      <div class="tex-status" id="texStatus">No textures loaded</div>
-      <div class="tile-grid" id="texGrid"></div>
-      <div class="row-btns" id="texBtns" style="display:none">
-        <button class="btn" onclick="selAllTex()">✓ All</button>
-        <button class="btn" onclick="deselAllTex()">✗ None</button>
-        <button class="btn" style="color:var(--red);border-color:var(--red)" onclick="clearTex()">🗑</button>
-      </div>
-    </div>
-
-    <div id="tabCus" style="display:none">
-      <div id="cusGrid" class="tile-grid"></div>
-      <div class="ctile-inp">
-        <input type="color" id="cCol" value="#c2a46e">
-        <input type="text" id="cName" placeholder="Tile name">
-        <button class="btn" onclick="addCus()">＋</button>
-      </div>
+    <div class="sidebar-section" style="flex:1;">
+      <h3>Расход плиток</h3>
+      <ul class="counts-list" id="counts-list">
+        <li style="color:var(--muted);font-size:11px;padding:6px 0;">Загрузите плитки и нарисуйте карту</li>
+      </ul>
     </div>
   </div>
 
-  <hr class="div">
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvas-area">
+    <canvas id="map-canvas"></canvas>
+    <div class="hint-overlay">
+      🖱 Колёсико — масштаб<br>
+      ✋ Перетащить — перемещение<br>
+      Space + drag — панорама
+    </div>
+  </div>
 
-  <button class="btn prim" id="genBtn" onclick="generate()">⚡ Generate Layout</button>
-  <button class="btn exp" id="expBtn" onclick="exportPNG()" disabled>💾 Export PNG</button>
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <h3>Выбранная плитка</h3>
+    <div class="selected-tile-info">
+      <div class="selected-tile-preview" id="selected-preview"><span>Не выбрано</span></div>
+      <div class="selected-name" id="selected-name">—</div>
+      <div class="slot-info" id="slot-info"></div>
+    </div>
 
+    <div style="padding:10px 14px; border-top:1px solid var(--border); margin-top:auto;">
+      <h3 style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Нажатая ячейка</h3>
+      <div id="clicked-tile-info" style="font-size:12px;color:var(--muted);">Нажмите на карту</div>
+    </div>
+  </div>
 </div>
 
-<!-- ════════════ CANVAS ════════════ -->
-<div class="canvas-area" id="ca">
-
-  <div class="empty" id="empty">
-    <div class="ico">🗺️</div>
-    <h2>No layout yet</h2>
-    <p>Upload an image, choose tiles,<br>then click <strong>Generate Layout</strong></p>
-  </div>
-
-  <canvas id="mc"></canvas>
-
-  <div class="hud" id="hud">Scroll to zoom · Drag to pan · Click tile for info</div>
-  <div id="selInfo"><div class="sn" id="siName"></div><div class="si" id="siPos"></div></div>
-
-  <div class="zoom-c">
-    <button class="zb" onclick="zoom_(1.25)">＋</button>
-    <button class="zb" onclick="zoom_(.8)">－</button>
-    <button class="zb" onclick="fitView()" title="Fit">⊙</button>
-  </div>
-
-  <div class="loader" id="ld"><div class="spin"></div><p id="lt">Processing…</p></div>
+<div class="status-bar">
+  <div>Ячейка: <span id="pos-label">—</span></div>
+  <div>Плитка: <span id="tile-label">—</span></div>
+  <div>Размещено: <span id="total-tiles">0</span></div>
+  <div>Свободно: <span id="free-count">—</span></div>
+  <div>Зум: <span id="zoom-label">100%</span></div>
 </div>
 
-<!-- ════════════ RIGHT PANEL ════════════ -->
-<div class="panel right" id="rp">
-
-  <div class="section">
-    <div class="sec-hd">Statistics</div>
-    <div class="stat-grid">
-      <div class="stat-c"><div class="sl">Tiles used</div><div class="sv" id="stT">—</div></div>
-      <div class="stat-c"><div class="sl">Unique types</div><div class="sv" id="stU">—</div></div>
-      <div class="stat-c"><div class="sl">Cells filled</div><div class="sv" id="stC">—</div></div>
-      <div class="stat-c"><div class="sl">Map coverage</div><div class="sv" id="stP">—</div></div>
-    </div>
-  </div>
-
-  <hr class="div">
-
-  <div class="section">
-    <div class="sec-hd">Tiles breakdown</div>
-    <div id="breakdown"><div class="empty-sm">Generate a layout to see breakdown</div></div>
-  </div>
-
-  <hr class="div">
-
-  <div class="section">
-    <div class="sec-hd">Color legend</div>
-    <div id="legend"><div class="empty-sm">—</div></div>
-  </div>
-
-</div>
+<div id="dropzone-overlay">
+  <div style="font-size:40px;">🧱</div>
+  <div>ПЕРЕТАЩИ ФАЙЛЫ</div>
+  <div style="font-size:12px;font-weight:400;color:var(--muted);">WebP плитки или изображение</div>
 </div>
 
-<div id="ttip"><div class="tname" id="ttName"></div><div class="tinfo" id="ttInfo"></div></div>
+<div class="tooltip" id="tooltip"></div>
 
 <script>
-// ═══════════════════════════════════════════
-//   TILE DATA  (name, representative color)
-// ═══════════════════════════════════════════
-// Colors are approximate visual averages of the actual tile textures.
-const TILES = [
-  {id:'lawn',              name:'Lawn',                              color:'#5a9e3c'},
-  {id:'green_hill',        name:'Green Hill Matcha Grass',           color:'#3d8a2a'},
-  {id:'flower_meadow',     name:'Flower Meadow',                     color:'#7abf4a'},
-  {id:'cherry_blossom',    name:'Cherry Blossom Carpet',             color:'#f5b8c8'},
-  {id:'strawberry_vanilla',name:'Strawberry Vanilla Tiles',          color:'#f0c0b0'},
-  {id:'pink_wafer',        name:'Pink Wafer Tiles',                  color:'#e88fa0'},
-  {id:'red_velvet',        name:'Red Velvet Carpet',                 color:'#9b2226'},
-  {id:'creepy_red',        name:'Creepy Red Tiles',                  color:'#6b1010'},
-  {id:'dark_choco',        name:'Dark Choco Tiles of Darkness',      color:'#2a1506'},
-  {id:'chocowood',         name:'Chocowood Tile',                    color:'#6b3a1e'},
-  {id:'chocostone',        name:'Chocostone Tiles',                  color:'#4a2e18'},
-  {id:'chocostone_rd',     name:'Chocostone Road',                   color:'#3a2210'},
-  {id:'chocolate_asphalt', name:'Chocolate Block Asphalt',           color:'#2e1e0e'},
-  {id:'cinnamon_roll',     name:'Cinnamon Roll Tile',                color:'#c8854a'},
-  {id:'cinnamon_sprinkle', name:'Cinnamon Sprinkle Road',            color:'#b87a3e'},
-  {id:'cheese_sand',       name:'Cheese Sand Tile',                  color:'#e8c860'},
-  {id:'ornate_cheese',     name:'Ornate Cheese Sand Tile',           color:'#d4a840'},
-  {id:'seaside_sand',      name:'Seaside Sand Path',                 color:'#e0c88a'},
-  {id:'coarse_salt',       name:'Coarse Salt Tiles',                 color:'#dde8d8'},
-  {id:'silent_salt',       name:'Silent Salt Tiles',                 color:'#c8d4cc'},
-  {id:'frosty',            name:'Frosty Tiles',                      color:'#b8d8f0'},
-  {id:'blue_vanilla',      name:'Blue Vanilla Tiles',                color:'#7ab8e8'},
-  {id:'slippery_icy',      name:'Slippery Icy Road',                 color:'#90c8e0'},
-  {id:'snowy_road',        name:'Snowy Road',                        color:'#e8f0f8'},
-  {id:'simple_stone',      name:'Simple Stone Tile',                 color:'#888c90'},
-  {id:'old_stone',         name:'Old Stone Tiles',                   color:'#707878'},
-  {id:'biscuitstone',      name:'Biscuitstone Tiles',                color:'#c8a870'},
-  {id:'biscuitstone_rd',   name:'Biscuitstone Road',                 color:'#b89460'},
-  {id:'biscuit_road',      name:'Biscuit Road of Possibilities',     color:'#d4b880'},
-  {id:'hard_almond',       name:'Hard Almond Tiles',                 color:'#c09060'},
-  {id:'aromatic_stone',    name:'Aromatic Stone Path',               color:'#a08070'},
-  {id:'cobbled_spice',     name:'Cobbled Spice Tiles',               color:'#986848'},
-  {id:'geometric_spice',   name:'Geometric Spice Tiles',             color:'#b87850'},
-  {id:'ornate_citadel',    name:'Ornate Citadel Tiles',              color:'#a09070'},
-  {id:'ornate_ancient_rd', name:'Ornate Ancient Road',               color:'#90806a'},
-  {id:'village_lane',      name:'Village Lane',                      color:'#b0986a'},
-  {id:'flower_city_stone', name:'Flower City Stone Tiles',           color:'#c8b080'},
-  {id:'jellystone',        name:'Jellystone Tiles',                  color:'#90d0c0'},
-  {id:'seashell',          name:'Seashell Tiles',                    color:'#e8d8c0'},
-  {id:'black_sesame',      name:'Black Sesame Dasik Tiles',          color:'#2a2820'},
-  {id:'cookie_cream',      name:'Cookie & Cream Tiles',              color:'#d8c8b0'},
-  {id:'creme_brulee',      name:'Crème Brûlée Tiles',                color:'#e8c870'},
-  {id:'ivory_pagoda',      name:'Ivory Pagoda Tiles',                color:'#f0e8d0'},
-  {id:'tea_leaf',          name:'Tea Leaf Tiles',                    color:'#7aaa6a'},
-  {id:'morning_star',      name:'Morning Star Tiles',                color:'#4a4a80'},
-  {id:'constellation_sn',  name:'Constellation Tiles (Starry Night)',color:'#1a1a3a'},
-  {id:'constellation_ds',  name:'Constellation Tiles (Starry Dream)',color:'#2a1850'},
-  {id:'peculiar_dream',    name:'Peculiar Dream Matter',             color:'#8060c0'},
-  {id:'midsummer',         name:'Midsummer Tiles of Dreams',         color:'#6080e0'},
-  {id:'twinkling_star',    name:'Twinkling Star Tiles',              color:'#8898d8'},
-  {id:'faerie_court',      name:'Faerie Courtyard Tiles',            color:'#90c870'},
-  {id:'faerie_insignia',   name:'Faerie Ancient Insignia Tiles',     color:'#70a860'},
-  {id:'tiles_blooming',    name:'Tiles of Blooming Dreams',          color:'#e880b0'},
-  {id:'eerie_cake',        name:'Eerie Cake Sheet Tile',             color:'#787060'},
-  {id:'tile_lies1',        name:'Tile Entrenched in Lies',           color:'#5a3070'},
-  {id:'tile_lies2',        name:'Tile Seeped in Lies',               color:'#3a2060'},
-  {id:'volcanic_brownie',  name:'Volcanic Brownie Tiles',            color:'#5a2010'},
-  {id:'road_eternity',     name:'Road to Eternity',                  color:'#d8d0f0'},
-  {id:'railroad_dreams',   name:'Railroad of Endless Dreams',        color:'#6060a0'},
-  {id:'mickey_biscuit',    name:"Mickey's Biscuit Tiles",            color:'#e8c898'},
-  {id:'mickey_cheese',     name:"Mickey's Cheese Tiles",             color:'#f0d860'},
-];
-
-// ═══════════════════════════════════════════
-//  MAP MASK  — parsed from the provided SVG
-//  64 × 60 grid, true = buildable
-// ═══════════════════════════════════════════
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const COLS = 64, ROWS = 60;
-const MASK = buildMask();
 
-function buildMask(){
-  // Buildable rects from SVG (white = buildable)
-  const rects = [
-    [0,0,16,4],[28,0,8,4],
-    [0,4,40,4],
-    [0,8,40,4],
-    [0,12,44,4],
-    [0,16,48,4],
-    [4,20,48,4],
-    [12,24,48,4],
-    [16,28,44,4],
-    [16,32,48,4],
-    [24,36,40,4],
-    [28,40,36,4],
-    [28,44,32,4],
-    [28,48,28,4],
-    [28,52,24,4],
-    [32,56,16,4],
+// Isometric tile dimensions (before any zoom)
+// In CRK the map is rotated 45° so we use classic iso projection:
+//   screen_x = (col - row) * TW/2
+//   screen_y = (col + row) * TH/2
+// TH/TW = 0.5 gives the standard 2:1 diamond
+const TW = 40;   // diamond full width
+const TH = 20;   // diamond full height  (TH = TW/2)
+
+// ─── MAP LAYOUT (white = buildable) ──────────────────────────────────────────
+const MAP_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="60" viewBox="0 0 64 60">
+<g fill="rgb(255,255,255)"><rect x="0" y="0" width="16" height="4"/><rect x="28" y="0" width="8" height="4"/><rect x="0" y="4" width="40" height="4"/><rect x="0" y="8" width="40" height="4"/><rect x="0" y="12" width="44" height="4"/><rect x="0" y="16" width="48" height="4"/><rect x="4" y="20" width="48" height="4"/><rect x="12" y="24" width="48" height="4"/><rect x="16" y="28" width="44" height="4"/><rect x="16" y="32" width="48" height="4"/><rect x="24" y="36" width="40" height="4"/><rect x="28" y="40" width="36" height="4"/><rect x="28" y="44" width="32" height="4"/><rect x="28" y="48" width="28" height="4"/><rect x="28" y="52" width="24" height="4"/><rect x="32" y="56" width="16" height="4"/></g>
+<g fill="rgb(0,0,0)"><rect x="16" y="0" width="12" height="4"/><rect x="36" y="0" width="28" height="4"/><rect x="40" y="4" width="24" height="4"/><rect x="40" y="8" width="24" height="4"/><rect x="44" y="12" width="20" height="4"/><rect x="48" y="16" width="16" height="4"/><rect x="0" y="20" width="4" height="4"/><rect x="52" y="20" width="12" height="4"/><rect x="0" y="24" width="12" height="4"/><rect x="60" y="24" width="4" height="4"/><rect x="0" y="28" width="16" height="4"/><rect x="60" y="28" width="4" height="4"/><rect x="0" y="32" width="16" height="4"/><rect x="0" y="36" width="24" height="4"/><rect x="0" y="40" width="28" height="4"/><rect x="0" y="44" width="28" height="4"/><rect x="60" y="44" width="4" height="4"/><rect x="0" y="48" width="28" height="4"/><rect x="56" y="48" width="8" height="4"/><rect x="0" y="52" width="28" height="4"/><rect x="52" y="52" width="12" height="4"/><rect x="0" y="56" width="32" height="4"/><rect x="48" y="56" width="16" height="4"/></g>
+</svg>`;
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let allowed = new Uint8Array(COLS * ROWS);
+let grid    = new Array(COLS * ROWS).fill(null);  // each cell: null | tile object
+let tiles   = [];
+let selectedTile = null;
+let tool = 'draw';
+let sourceImage = null;
+
+// Viewport / pan-zoom
+let vpX = 0, vpY = 0;   // offset in screen pixels (centre of canvas area)
+let vpZoom = 1.0;
+let isPanning = false;
+let panStartX = 0, panStartY = 0, panStartVpX = 0, panStartVpY = 0;
+let spaceDown = false;
+let isMouseDownDraw = false;
+
+// ─── CANVAS ───────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('map-canvas');
+const ctx    = canvas.getContext('2d');
+
+// Canvas is always the size of the canvas-area div; we draw everything with transforms
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  canvas.width  = area.clientWidth;
+  canvas.height = area.clientHeight;
+  render();
+}
+
+// ─── ISO PROJECTION ───────────────────────────────────────────────────────────
+// The SVG layout has row 0 at top, col 0 at left.
+// CRK rotates the map 90° counter-clockwise (i.e. col becomes the "depth" axis).
+// Standard iso (diamond) for CRK orientation:
+//   We swap col/row compared to typical iso so the map faces the right direction.
+//
+//   sx = (row - col) * TW/2        ← row grows right, col grows left-upward
+//   sy = (row + col) * TH/2        ← both grow downward
+//
+// This makes:
+//   col=0,row=0  → top vertex of diamond grid
+//   col grows → upper-left diagonal
+//   row grows → upper-right diagonal
+// Which matches CRK's visual rotation (90° CCW from top-down grid).
+
+function isoXY(col, row) {
+  const sx = (row + col) * (TW / 2);
+  const sy = (row - col) * (TH / 2);
+  return { sx, sy };
+}
+
+// Bounding box of the full grid in iso space
+function isoBounds() {
+  // Corners of the grid
+  const corners = [
+    isoXY(0,       0      ),
+    isoXY(COLS-1,  0      ),
+    isoXY(0,       ROWS-1 ),
+    isoXY(COLS-1,  ROWS-1 ),
   ];
-  // SVG uses 4-px-per-cell resolution → each rect covers cells
-  // x,y are SVG pixels; since viewBox=0 0 64 60 and SVG=64×60 the
-  // coordinates map 1:1 to grid columns/rows.
-  const m = Array.from({length:ROWS},()=>new Uint8Array(COLS));
-  rects.forEach(([x,y,w,h])=>{
-    for(let r=y;r<y+h;r++) for(let c=x;c<x+w;c++) if(r<ROWS&&c<COLS) m[r][c]=1;
-  });
-  return m;
-}
-
-let BUILDABLE = 0;
-for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) BUILDABLE += MASK[r][c];
-
-// ═══════════════════════════════════════════
-//   STATE
-// ═══════════════════════════════════════════
-let selIds  = new Set(TILES.map(t=>t.id));
-let cusTiles = [];
-let srcImg  = null;
-let grid    = null;   // ROWS × COLS, null=non-buildable, else tile id
-let _zoom   = 1;
-let _panX=0, _panY=0;
-let _drag=false, _ds={x:0,y:0};
-let _selTile = null;  // {id, r, c} last clicked
-
-// tile lookup map (built lazily)
-let tileMap = {};
-function getTileMap(){
-  if(!Object.keys(tileMap).length){
-    [...TILES,...texTiles,...cusTiles].forEach(t=>{ tileMap[t.id]=t; });
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const {sx, sy} of corners) {
+    if (sx < minX) minX = sx; if (sx > maxX) maxX = sx;
+    if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
   }
-  return tileMap;
-}
-function invalidateTileMap(){ tileMap={}; }
-
-// ═══════════════════════════════════════════
-//   INIT
-// ═══════════════════════════════════════════
-(function init(){
-  buildTileGrid();
-  setupUpload();
-  setupSliders();
-  setupCanvas();
-})();
-
-// ═══════════════════════════════════════════
-//   TILE GRID
-// ═══════════════════════════════════════════
-function buildTileGrid(){
-  const g = document.getElementById('tileGrid');
-  g.innerHTML = '';
-  TILES.forEach(t=>{
-    const el = mkTileEl(t, selIds.has(t.id), ()=>{
-      selIds.has(t.id) ? selIds.delete(t.id) : selIds.add(t.id);
-      el.classList.toggle('on', selIds.has(t.id));
-    });
-    g.appendChild(el);
-  });
+  // add tile size
+  maxX += TW; maxY += TH;
+  return { minX, maxX, minY, maxY, w: maxX - minX, h: maxY - minY };
 }
 
-function buildCusGrid(){
-  const g = document.getElementById('cusGrid');
-  g.innerHTML = '';
-  cusTiles.forEach(t=>{
-    const el = mkTileEl(t, selIds.has(t.id), ()=>{
-      selIds.has(t.id) ? selIds.delete(t.id) : selIds.add(t.id);
-      el.classList.toggle('on', selIds.has(t.id));
-    });
-    g.appendChild(el);
-  });
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const bounds = isoBounds();
+
+  // Transform: iso origin (minX,minY) maps to viewport centre + pan
+  const originX = W / 2 + vpX - bounds.minX * vpZoom - bounds.w * vpZoom / 2;
+  const originY = H / 2 + vpY - bounds.minY * vpZoom - bounds.h * vpZoom / 2;
+
+  ctx.save();
+  ctx.translate(originX, originY);
+  ctx.scale(vpZoom, vpZoom);
+
+  // Draw back-to-front (painter's algorithm): row+col ascending
+  for (let sum = 0; sum < COLS + ROWS - 1; sum++) {
+    for (let col = 0; col < COLS; col++) {
+      const row = sum - col;
+      if (row < 0 || row >= ROWS) continue;
+      const idx = row * COLS + col;
+      const { sx, sy } = isoXY(col, row);
+      drawCell(sx, sy, allowed[idx], grid[idx]);
+    }
+  }
+
+  ctx.restore();
 }
 
-function mkTileEl(t, active, onClick){
-  const el = document.createElement('div');
-  el.className = 'tile-item'+(active?' on':'');
-  el.innerHTML = `<div class="sw" style="background:${t.color}"></div><span class="tn">${t.name}</span>`;
-  el.onclick = onClick;
-  return el;
+function drawCell(sx, sy, isAllowed, tileData) {
+  const hw = TW / 2, hh = TH / 2;
+
+  // Diamond path
+  ctx.beginPath();
+  ctx.moveTo(sx + hw, sy);         // top
+  ctx.lineTo(sx + TW, sy + hh);   // right
+  ctx.lineTo(sx + hw, sy + TH);   // bottom
+  ctx.lineTo(sx,      sy + hh);   // left
+  ctx.closePath();
+
+  if (tileData && tileData.img) {
+    ctx.save();
+    ctx.clip();
+    // Draw the tile image stretched to fit the diamond bounding box
+    ctx.drawImage(tileData.img, sx, sy, TW, TH);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 0.5 / vpZoom;
+    ctx.stroke();
+  } else if (isAllowed) {
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 0.5 / vpZoom;
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(80,80,80,0.3)';
+    ctx.lineWidth = 0.3 / vpZoom;
+    ctx.stroke();
+  }
 }
 
-function selAll(){
-  TILES.forEach(t=>selIds.add(t.id));
-  buildTileGrid();
-}
-function deselAll(){
-  TILES.forEach(t=>selIds.delete(t.id));
-  buildTileGrid();
-}
+// ─── HIT TEST ─────────────────────────────────────────────────────────────────
+// Convert screen position → grid cell using the inverse of isoXY
+function screenToGrid(screenX, screenY) {
+  const W = canvas.width, H = canvas.height;
+  const bounds = isoBounds();
+  const originX = W / 2 + vpX - bounds.minX * vpZoom - bounds.w * vpZoom / 2;
+  const originY = H / 2 + vpY - bounds.minY * vpZoom - bounds.h * vpZoom / 2;
 
-function swTab(tab, btn){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('tabStd').style.display = tab==='std'?'':'none';
-  document.getElementById('tabTex').style.display = tab==='tex'?'':'none';
-  document.getElementById('tabCus').style.display = tab==='cus'?'':'none';
-}
+  // to iso space
+  const ix = (screenX - originX) / vpZoom;
+  const iy = (screenY - originY) / vpZoom;
 
-function addCus(){
-  const color = document.getElementById('cCol').value;
-  const rawName = document.getElementById('cName').value.trim();
-  const name = rawName || 'Custom tile '+(cusTiles.length+1);
-  const id = 'cus_'+Date.now();
-  cusTiles.push({id,name,color});
-  selIds.add(id);
-  invalidateTileMap();
-  buildCusGrid();
-  document.getElementById('cName').value='';
-}
+  // sx = (row-col)*TW/2   sy = (row+col)*TH/2
+  // row-col = 2*ix/TW = u
+  // row+col = 2*iy/TH = v
+  const u = (2 * ix) / TW;
+  const v = (2 * iy) / TH;
+  const row = Math.floor((u + v) / 2 + 0.5);
+  const col = Math.floor((v - u) / 2 + 0.5);
 
-// ═══════════════════════════════════════════
-//   UPLOAD
-// ═══════════════════════════════════════════
-function setupUpload(){
-  const dz = document.getElementById('dz');
-  const fi = document.getElementById('fInput');
-  dz.ondragover  = e=>{ e.preventDefault(); dz.classList.add('over'); };
-  dz.ondragleave = ()=>dz.classList.remove('over');
-  dz.ondrop = e=>{ e.preventDefault(); dz.classList.remove('over'); if(e.dataTransfer.files[0]) loadImg(e.dataTransfer.files[0]); };
-  fi.onchange = e=>{ if(fi.files[0]) loadImg(fi.files[0]); };
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return null;
 
-  // Texture folder drop
-  const td = document.getElementById('texDrop');
-  const ti = document.getElementById('texInput');
-  td.onclick = ()=>ti.click();
-  td.ondragover  = e=>{ e.preventDefault(); td.classList.add('over'); };
-  td.ondragleave = ()=>td.classList.remove('over');
-  td.ondrop = e=>{
-    e.preventDefault(); td.classList.remove('over');
-    const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
-    if(files.length) loadTextures(files);
-  };
-  ti.onchange = e=>{
-    const files=[...ti.files].filter(f=>f.type.startsWith('image/'));
-    if(files.length) loadTextures(files);
-  };
+  // Fine hit test: check if point is inside the diamond
+  const { sx, sy } = isoXY(col, row);
+  const hw = TW / 2, hh = TH / 2;
+  const dx = Math.abs(ix - sx - hw) / hw;
+  const dy = Math.abs(iy - sy - hh) / hh;
+  if (dx + dy > 1.02) return null;
+
+  return { col, row };
 }
 
-// ═══════════════════════════════════════════
-//   TEXTURE SYSTEM
-// ═══════════════════════════════════════════
-let texTiles = []; // {id, name, color, imgData (data URL)}
+// ─── INTERACTION ─────────────────────────────────────────────────────────────
+const canvasArea = document.getElementById('canvas-area');
 
-function loadTextures(files){
-  const bar=document.getElementById('texBar');
-  const fill=document.getElementById('texBarFill');
-  const status=document.getElementById('texStatus');
-  bar.style.display='block';
-  status.textContent=`Loading ${files.length} image(s)…`;
+canvasArea.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = canvasArea.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
 
-  // Clear existing texture tiles from selIds
-  texTiles.forEach(t=>selIds.delete(t.id));
-  texTiles=[];
-  invalidateTileMap();
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  const newZoom = Math.max(0.15, Math.min(8, vpZoom * factor));
 
-  let done=0;
-  const total=files.length;
-  const results=[];
+  // Zoom toward mouse pointer
+  vpX = mx - (mx - vpX) * (newZoom / vpZoom) + (canvas.width/2)*(newZoom/vpZoom - 1) - canvas.width/2*(newZoom/vpZoom-1);
+  // Simpler: keep the iso-point under cursor fixed
+  const W = canvas.width, H = canvas.height;
+  vpX = (vpX - (mx - W/2)) * (newZoom / vpZoom) + (mx - W/2);
+  vpY = (vpY - (my - H/2)) * (newZoom / vpZoom) + (my - H/2);
+  vpZoom = newZoom;
 
-  files.forEach((file,idx)=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const dataUrl=e.target.result;
-      const img=new Image();
-      img.onload=()=>{
-        // Extract average color from the image (skip transparent pixels)
-        const oc=document.createElement('canvas');
-        oc.width=Math.min(img.width,64); oc.height=Math.min(img.height,64);
-        const ctx=oc.getContext('2d');
-        ctx.drawImage(img,0,0,oc.width,oc.height);
-        const px=ctx.getImageData(0,0,oc.width,oc.height).data;
-        let rS=0,gS=0,bS=0,n=0;
-        for(let i=0;i<px.length;i+=4){
-          const a=px[i+3];
-          if(a>30){ rS+=px[i]; gS+=px[i+1]; bS+=px[i+2]; n++; }
+  document.getElementById('zoom-label').textContent = Math.round(vpZoom * 100) + '%';
+  render();
+}, { passive: false });
+
+document.addEventListener('keydown', e => { if (e.code === 'Space') { spaceDown = true; e.preventDefault(); } });
+document.addEventListener('keyup',   e => { if (e.code === 'Space') spaceDown = false; });
+
+canvasArea.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  if (spaceDown || tool === 'pan') {
+    isPanning = true;
+    panStartX = e.clientX; panStartY = e.clientY;
+    panStartVpX = vpX; panStartVpY = vpY;
+    canvasArea.classList.add('grabbing');
+    canvasArea.classList.remove('drawing');
+  } else {
+    isMouseDownDraw = true;
+    handlePaint(e);
+  }
+});
+
+document.addEventListener('mousemove', e => {
+  if (isPanning) {
+    vpX = panStartVpX + (e.clientX - panStartX);
+    vpY = panStartVpY + (e.clientY - panStartY);
+    render();
+    return;
+  }
+
+  const rect = canvasArea.getBoundingClientRect();
+  const cell = screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
+  const tooltip = document.getElementById('tooltip');
+
+  if (cell) {
+    document.getElementById('pos-label').textContent = `(${cell.col}, ${cell.row})`;
+    const idx = cell.row * COLS + cell.col;
+    const t = grid[idx];
+    document.getElementById('tile-label').textContent = t ? t.name : (allowed[idx] ? 'пусто' : 'блок.');
+
+    if (t) {
+      tooltip.style.opacity = '1';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 6) + 'px';
+      tooltip.textContent = t.name;
+    } else { tooltip.style.opacity = '0'; }
+
+    if (isMouseDownDraw) paintCell(cell.col, cell.row);
+  } else {
+    tooltip.style.opacity = '0';
+    document.getElementById('pos-label').textContent = '—';
+  }
+});
+
+document.addEventListener('mouseup', e => {
+  if (isPanning) {
+    isPanning = false;
+    canvasArea.classList.remove('grabbing');
+    if (!spaceDown) canvasArea.classList.add('drawing');
+  }
+  isMouseDownDraw = false;
+});
+
+canvasArea.addEventListener('mouseleave', () => {
+  document.getElementById('tooltip').style.opacity = '0';
+});
+
+canvasArea.addEventListener('click', e => {
+  if (isPanning) return;
+  const rect = canvasArea.getBoundingClientRect();
+  const cell = screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
+  if (!cell) return;
+  const idx = cell.row * COLS + cell.col;
+  const t = grid[idx];
+  const info = document.getElementById('clicked-tile-info');
+  info.textContent = t ? `${t.name}\n(${cell.col}, ${cell.row})` : `пусто (${cell.col}, ${cell.row})`;
+  info.style.color = t ? 'var(--accent)' : 'var(--muted)';
+  info.style.whiteSpace = 'pre';
+});
+
+function handlePaint(e) {
+  const rect = canvasArea.getBoundingClientRect();
+  const cell = screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
+  if (cell) paintCell(cell.col, cell.row);
+}
+
+function paintCell(col, row) {
+  const idx = row * COLS + col;
+  if (allowed[idx] !== 1) return;
+  if (tool === 'erase') {
+    grid[idx] = null;
+  } else if (selectedTile) {
+    grid[idx] = selectedTile;
+  }
+  render();
+  updateCounts();
+  if (selectedTile) {
+    document.getElementById('slot-info').textContent = `Использовано: ${grid.filter(c => c && c.name === selectedTile.name).length}`;
+  }
+}
+
+// ─── ZOOM RESET on double-click ───────────────────────────────────────────────
+canvasArea.addEventListener('dblclick', e => {
+  if (spaceDown) { vpX = 0; vpY = 0; vpZoom = 1; document.getElementById('zoom-label').textContent = '100%'; render(); }
+});
+
+// ─── ALLOWED MAP ─────────────────────────────────────────────────────────────
+function buildAllowedMap() {
+  return new Promise(res => {
+    const c = document.createElement('canvas');
+    c.width = COLS; c.height = ROWS;
+    const cx = c.getContext('2d');
+    const img = new Image();
+    const blob = new Blob([MAP_SVG], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      cx.drawImage(img, 0, 0, COLS, ROWS);
+      const data = cx.getImageData(0, 0, COLS, ROWS).data;
+      const a = new Uint8Array(COLS * ROWS);
+      for (let r = 0; r < ROWS; r++)
+        for (let c = 0; c < COLS; c++) {
+          const px = (r * COLS + c) * 4;
+          a[r * COLS + c] = (data[px] + data[px+1] + data[px+2]) > 300 ? 1 : 0;
         }
-        const r=n?Math.round(rS/n):128;
-        const g=n?Math.round(gS/n):128;
-        const b=n?Math.round(bS/n):128;
-        const hex='#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+      URL.revokeObjectURL(url);
+      res(a);
+    };
+    img.src = url;
+  });
+}
 
-        // Name from filename without extension
-        const baseName=file.name.replace(/\.[^.]+$/,'');
-
-        results[idx]={
-          id:'tex_'+Date.now()+'_'+idx,
-          name:baseName,
-          color:hex,
-          imgData:dataUrl,
+// ─── TILES ───────────────────────────────────────────────────────────────────
+function loadTiles(files) {
+  const promises = Array.from(files).map(file => new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const name = file.name.replace(/\.(webp|png|jpg|jpeg)$/i, '');
+        // Pre-render tile into a small offscreen canvas sized to diamond (TW x TH)
+        // so drawing is fast
+        const oc = document.createElement('canvas');
+        oc.width = TW; oc.height = TH;
+        const octx = oc.getContext('2d');
+        octx.drawImage(img, 0, 0, TW, TH);
+        const tileImg = new Image();
+        tileImg.src = oc.toDataURL();
+        tileImg.onload = () => {
+          tiles.push({ name, src: ev.target.result, img: tileImg });
+          res();
         };
-
-        done++;
-        fill.style.width=Math.round(done/total*100)+'%';
-
-        if(done===total){
-          texTiles=results.filter(Boolean);
-          texTiles.forEach(t=>selIds.add(t.id));
-          invalidateTileMap();
-          bar.style.display='none';
-          status.textContent=`✓ ${texTiles.length} texture(s) loaded`;
-          document.getElementById('texBtns').style.display='flex';
-          renderTexGrid();
-        }
       };
-      img.src=dataUrl;
+      img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
+  }));
+  Promise.all(promises).then(renderPalette);
+}
+
+function renderPalette() {
+  const pg = document.getElementById('palette-grid');
+  pg.innerHTML = '';
+  tiles.forEach((tile, i) => {
+    const div = document.createElement('div');
+    div.className = 'tile-item';
+    div.innerHTML = `<img src="${tile.src}" title="${tile.name}"><span class="tile-name">${tile.name}</span>`;
+    div.addEventListener('click', () => {
+      selectTile(tile);
+      document.querySelectorAll('.tile-item').forEach(el => el.classList.remove('active'));
+      div.classList.add('active');
+    });
+    pg.appendChild(div);
+    if (i === 0 && !selectedTile) { selectTile(tile); div.classList.add('active'); }
   });
 }
 
-function renderTexGrid(){
-  const g=document.getElementById('texGrid');
-  g.innerHTML='';
-  texTiles.forEach(t=>{
-    const el=document.createElement('div');
-    el.className='tile-item'+(selIds.has(t.id)?' on':'');
-    // Use actual image thumbnail instead of solid color swatch
-    el.innerHTML=`<img class="tex-thumb" src="${t.imgData}" alt=""><span class="tn">${t.name}</span>`;
-    el.onclick=()=>{
-      selIds.has(t.id)?selIds.delete(t.id):selIds.add(t.id);
-      el.classList.toggle('on',selIds.has(t.id));
-    };
-    g.appendChild(el);
+function selectTile(tile) {
+  selectedTile = tile;
+  const preview = document.getElementById('selected-preview');
+  preview.innerHTML = `<img src="${tile.src}">`;
+  document.getElementById('selected-name').textContent = tile.name;
+  const count = grid.filter(c => c && c.name === tile.name).length;
+  document.getElementById('slot-info').textContent = `Использовано: ${count}`;
+  tool = 'draw';
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tool-draw').classList.add('active');
+}
+
+// ─── COUNTS ──────────────────────────────────────────────────────────────────
+function updateCounts() {
+  const counts = {};
+  let total = 0, free = 0;
+  for (let i = 0; i < COLS * ROWS; i++) {
+    if (!allowed[i]) continue;
+    if (grid[i]) { counts[grid[i].name] = (counts[grid[i].name] || 0) + 1; total++; }
+    else free++;
+  }
+  document.getElementById('total-tiles').textContent = total;
+  document.getElementById('free-count').textContent = free;
+
+  const list = document.getElementById('counts-list');
+  list.innerHTML = '';
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  if (!sorted.length) { list.innerHTML = '<li style="color:var(--muted);font-size:11px;padding:6px 0;">Пусто</li>'; return; }
+  for (const [name, count] of sorted) {
+    const tile = tiles.find(t => t.name === name);
+    const li = document.createElement('li');
+    li.innerHTML = `<div class="tile-thumb">${tile ? `<img src="${tile.src}">` : ''}</div><span class="name">${name}</span><span class="count">${count}</span>`;
+    list.appendChild(li);
+  }
+}
+
+// ─── APPLY IMAGE ─────────────────────────────────────────────────────────────
+document.getElementById('apply-img').addEventListener('click', () => {
+  if (!sourceImage) { alert('Сначала загрузите исходное изображение!'); return; }
+  if (!tiles.length) { alert('Сначала загрузите плитки!'); return; }
+
+  // Sample the source image at each grid cell position
+  const oc = document.createElement('canvas');
+  oc.width = COLS; oc.height = ROWS;
+  const octx = oc.getContext('2d');
+  octx.drawImage(sourceImage, 0, 0, COLS, ROWS);
+  const imgData = octx.getImageData(0, 0, COLS, ROWS).data;
+
+  // For each tile, compute its average colour
+  const tileColors = tiles.map(tile => {
+    const tc = document.createElement('canvas'); tc.width = 1; tc.height = 1;
+    const tctx = tc.getContext('2d'); tctx.drawImage(tile.img, 0, 0, 1, 1);
+    const d = tctx.getImageData(0, 0, 1, 1).data;
+    return { tile, r: d[0], g: d[1], b: d[2] };
   });
-}
 
-function selAllTex(){ texTiles.forEach(t=>selIds.add(t.id)); renderTexGrid(); }
-function deselAllTex(){ texTiles.forEach(t=>selIds.delete(t.id)); renderTexGrid(); }
-function clearTex(){
-  texTiles.forEach(t=>selIds.delete(t.id));
-  texTiles=[];
-  invalidateTileMap();
-  document.getElementById('texGrid').innerHTML='';
-  document.getElementById('texStatus').textContent='No textures loaded';
-  document.getElementById('texBtns').style.display='none';
-  document.getElementById('texBar').style.display='none';
-}
-
-function loadImg(file){
-  const fr = new FileReader();
-  fr.onload = e=>{
-    const img = new Image();
-    img.onload = ()=>{
-      srcImg = img;
-      const p = document.getElementById('srcPrev');
-      p.src = e.target.result;
-      p.style.display = 'block';
-    };
-    img.src = e.target.result;
-  };
-  fr.readAsDataURL(file);
-}
-
-// ═══════════════════════════════════════════
-//   SLIDERS
-// ═══════════════════════════════════════════
-function setupSliders(){
-  [['bs','bv'],['cs','cv'],['ss','sv']].forEach(([sid,vid])=>{
-    const s=document.getElementById(sid), v=document.getElementById(vid);
-    v.textContent=s.value;
-    s.oninput=()=>{ v.textContent=s.value; };
-  });
-}
-
-// ═══════════════════════════════════════════
-//   GENERATE
-// ═══════════════════════════════════════════
-function generate(){
-  if(!srcImg){ alert('Please upload an image first.'); return; }
-  const pal = [...TILES,...texTiles,...cusTiles].filter(t=>selIds.has(t.id));
-  if(!pal.length){ alert('Select at least one tile type.'); return; }
-
-  showLoader('Sampling image…');
-  invalidateTileMap();
-
-  setTimeout(()=>{
-    try{
-      const brightness = +document.getElementById('bs').value;
-      const contrast   = +document.getElementById('cs').value;
-      const saturation = +document.getElementById('ss').value;
-      const method     = document.getElementById('qSel').value;
-
-      // Sample source image at COLS × ROWS
-      const off = document.createElement('canvas');
-      off.width=COLS; off.height=ROWS;
-      const ctx = off.getContext('2d');
-      ctx.filter = `brightness(${100+brightness}%) contrast(${100+contrast}%) saturate(${100+saturation}%)`;
-      ctx.drawImage(srcImg, 0, 0, COLS, ROWS);
-      const imgd = ctx.getImageData(0,0,COLS,ROWS);
-      const d = imgd.data;
-
-      // Pre-parse palette colors
-      const palRgb = pal.map(t=>({...t, rgb: h2r(t.color)}));
-
-      grid = [];
-      for(let r=0;r<ROWS;r++){
-        grid.push([]);
-        for(let c=0;c<COLS;c++){
-          if(!MASK[r][c]){ grid[r].push(null); continue; }
-          const i=(r*COLS+c)*4;
-          let pr=d[i],pg=d[i+1],pb=d[i+2];
-
-          let best=palRgb[0], bestD=Infinity;
-          palRgb.forEach(t=>{
-            const dd=cdist(pr,pg,pb,t.rgb.r,t.rgb.g,t.rgb.b);
-            if(dd<bestD){ bestD=dd; best=t; }
-          });
-          grid[r].push(best.id);
-
-          if(method==='dither'){
-            const {r:tr,g:tg,b:tb}=best.rgb;
-            diffuse(d,COLS,ROWS,c,r, pr-tr, pg-tg, pb-tb);
-          }
-        }
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const idx = row * COLS + col;
+      if (!allowed[idx]) continue;
+      const px = idx * 4;
+      const r = imgData[px], g = imgData[px+1], b = imgData[px+2];
+      let best = null, bestDist = Infinity;
+      for (const tc of tileColors) {
+        const d = (tc.r-r)**2 + (tc.g-g)**2 + (tc.b-b)**2;
+        if (d < bestDist) { bestDist = d; best = tc.tile; }
       }
-
-      hideLoader();
-      drawIso();
-      updateStats();
-      document.getElementById('expBtn').disabled = false;
-    }catch(e){
-      hideLoader();
-      console.error(e);
-    }
-  },30);
-}
-
-function diffuse(d,W,H,c,r,eR,eG,eB){
-  [[c+1,r,7/16],[c-1,r+1,3/16],[c,r+1,5/16],[c+1,r+1,1/16]].forEach(([nc,nr,w])=>{
-    if(nc<0||nc>=W||nr<0||nr>=H) return;
-    const i=(nr*W+nc)*4;
-    d[i]   = Math.max(0,Math.min(255,d[i]  +eR*w));
-    d[i+1] = Math.max(0,Math.min(255,d[i+1]+eG*w));
-    d[i+2] = Math.max(0,Math.min(255,d[i+2]+eB*w));
-  });
-}
-
-function h2r(hex){
-  hex=hex.replace('#','');
-  return{r:parseInt(hex.slice(0,2),16),g:parseInt(hex.slice(2,4),16),b:parseInt(hex.slice(4,6),16)};
-}
-function cdist(r1,g1,b1,r2,g2,b2){
-  const dr=r1-r2,dg=g1-g2,db=b1-b2;
-  // Weighted perceptual distance
-  return 0.299*dr*dr+0.587*dg*dg+0.114*db*db;
-}
-
-// ═══════════════════════════════════════════
-//   ISOMETRIC DRAW
-//   Image orientation is kept straight (no rotation).
-//   Only the map view is rendered in isometric projection.
-// ═══════════════════════════════════════════
-const TW = 18;  // diamond width
-const TH = 9;   // diamond height (TH = TW/2)
-const TD = 4;   // side depth
-
-function drawIso(){
-  const canvas = document.getElementById('mc');
-  const tm = getTileMap();
-
-  const isoW = (COLS + ROWS) * (TW/2) + TW;
-  const isoH = (COLS + ROWS) * (TH/2) + TH + TD + 2;
-
-  canvas.width  = isoW;
-  canvas.height = isoH;
-
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,isoW,isoH);
-
-  // 🔁 Изменено: COLS → ROWS
-  const ox = 0;
-  const oy = ROWS * (TW/4);
-
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      const tid = grid[r][c];
-      if(tid===null) continue;
-      const tile = tm[tid];
-      if(!tile) continue;
-
-      // 🔁 Изменено: (c - r) → (r - c), (c + r) → (r + c)
-      const x = ox + (r + c) * (TW/2);
-      const y = oy + (r - c) * (TH/2);
-      
-      drawTile(ctx, x, y, tile);
+      grid[idx] = best;
     }
   }
+  render();
+  updateCounts();
+});
 
-  // Show canvas, hide empty state
-  canvas.style.display = 'block';
-  document.getElementById('empty').style.display = 'none';
-  document.getElementById('hud').style.display   = 'block';
+// ─── TOOLS ───────────────────────────────────────────────────────────────────
+document.getElementById('tool-draw').addEventListener('click', () => setTool('draw'));
+document.getElementById('tool-erase').addEventListener('click', () => setTool('erase'));
+document.getElementById('tool-fill').addEventListener('click', () => {
+  if (!selectedTile) { alert('Сначала выберите плитку!'); return; }
+  if (!confirm('Залить все свободные разрешённые ячейки выбранной плиткой?')) return;
+  for (let i = 0; i < COLS*ROWS; i++) { if (allowed[i] && !grid[i]) grid[i] = selectedTile; }
+  render(); updateCounts();
+});
 
-  fitView();
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (!confirm('Очистить всю карту?')) return;
+  grid.fill(null); render(); updateCounts();
+});
+
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tool-' + t).classList.add('active');
+  canvasArea.classList.toggle('drawing', t !== 'pan');
 }
 
-function drawTile(ctx, x, y, tile){
-  const color = tile.color || '#888';
-  const rgb = h2r(color);
-  const left  = shade(rgb, -45);
-  const right = shade(rgb, -20);
+// ─── FILE UPLOADS ────────────────────────────────────────────────────────────
+document.getElementById('img-upload').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      sourceImage = img;
+      document.getElementById('source-preview').style.display = 'block';
+      document.getElementById('source-img').src = ev.target.result;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
 
-  // Build top fill: use texture pattern if available, else flat color
-  let topFill = color;
-  if(tile._pat){
-    topFill = tile._pat;
-  } else if(tile.imgData && !tile._patLoaded){
-    // Patterns are set up async; fall back to color on first frame
-    topFill = color;
+document.getElementById('tiles-upload').addEventListener('change', e => { loadTiles(e.target.files); });
+
+// ─── DRAG & DROP ─────────────────────────────────────────────────────────────
+const dropOverlay = document.getElementById('dropzone-overlay');
+document.addEventListener('dragover', e => { e.preventDefault(); dropOverlay.classList.add('show'); });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) dropOverlay.classList.remove('show'); });
+document.addEventListener('drop', e => {
+  e.preventDefault(); dropOverlay.classList.remove('show');
+  const files = Array.from(e.dataTransfer.files);
+  const webp = files.filter(f => f.name.endsWith('.webp') || f.type === 'image/webp');
+  const imgs = files.filter(f => f.type.startsWith('image/') && !f.name.endsWith('.webp'));
+  if (webp.length) loadTiles(webp);
+  if (imgs.length) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => { sourceImage = img; document.getElementById('source-preview').style.display = 'block'; document.getElementById('source-img').src = ev.target.result; };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(imgs[0]);
   }
+});
 
-  // Top diamond face
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x,      y);
-  ctx.lineTo(x+TW/2, y+TH/2);
-  ctx.lineTo(x,      y+TH);
-  ctx.lineTo(x-TW/2, y+TH/2);
-  ctx.closePath();
-  ctx.fillStyle = topFill;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,.18)'; ctx.lineWidth=.4; ctx.stroke();
-  ctx.restore();
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+document.getElementById('export-btn').addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = 'crk-map-art.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
 
-  // Left face
-  ctx.beginPath();
-  ctx.moveTo(x-TW/2, y+TH/2);
-  ctx.lineTo(x,      y+TH);
-  ctx.lineTo(x,      y+TH+TD);
-  ctx.lineTo(x-TW/2, y+TH/2+TD);
-  ctx.closePath();
-  ctx.fillStyle=left; ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=.4; ctx.stroke();
+// ─── INIT ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', resizeCanvas);
 
-  // Right face
-  ctx.beginPath();
-  ctx.moveTo(x,      y+TH);
-  ctx.lineTo(x+TW/2, y+TH/2);
-  ctx.lineTo(x+TW/2, y+TH/2+TD);
-  ctx.lineTo(x,      y+TH+TD);
-  ctx.closePath();
-  ctx.fillStyle=right; ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.lineWidth=.4; ctx.stroke();
-}
-
-function shade({r,g,b}, amt){
-  return `rgb(${Math.max(0,Math.min(255,r+amt))},${Math.max(0,Math.min(255,g+amt))},${Math.max(0,Math.min(255,b+amt))})`;
-}
-
-// ═══════════════════════════════════════════
-//   CANVAS INTERACTION
-// ═══════════════════════════════════════════
-function setupCanvas(){
-  const cv = document.getElementById('mc');
-  const ca = document.getElementById('ca');
-
-  // zoom
-  ca.addEventListener('wheel', e=>{
-    e.preventDefault();
-    zoom_(e.deltaY<0?1.12:.89, e.clientX, e.clientY);
-  },{passive:false});
-
-  // drag
-  ca.addEventListener('mousedown', e=>{
-    if(e.button!==0) return;
-    _drag=true;
-    _ds={x:e.clientX-_panX, y:e.clientY-_panY};
-    cv.style.cursor='grabbing';
-  });
-  window.addEventListener('mousemove', e=>{
-    if(!_drag) return;
-    _panX=e.clientX-_ds.x;
-    _panY=e.clientY-_ds.y;
-    applyXform();
-  });
-  window.addEventListener('mouseup', ()=>{ _drag=false; cv.style.cursor='grab'; });
-
-  // click → identify tile
-  ca.addEventListener('click', e=>{
-    if(!grid) return;
-    const hit = screenToGrid(e.clientX, e.clientY);
-    if(!hit) return;
-    const {r,c} = hit;
-    if(r<0||r>=ROWS||c<0||c>=COLS) return;
-    const tid = grid[r][c];
-    if(!tid) return;
-    const tm = getTileMap();
-    const tile = tm[tid];
-    if(!tile) return;
-    showTileInfo(tile, r, c);
-  });
-
-  // hover tooltip
-  ca.addEventListener('mousemove', e=>{
-    if(!grid||_drag) return;
-    const hit = screenToGrid(e.clientX, e.clientY);
-    const tp = document.getElementById('ttip');
-    if(!hit){ tp.style.display='none'; return; }
-    const {r,c}=hit;
-    if(r<0||r>=ROWS||c<0||c>=COLS){ tp.style.display='none'; return; }
-    const tid=grid[r][c];
-    if(!tid){ tp.style.display='none'; return; }
-    const tile=getTileMap()[tid];
-    if(!tile){ tp.style.display='none'; return; }
-    document.getElementById('ttName').textContent=tile.name;
-    document.getElementById('ttInfo').textContent=`Row ${r+1}, Col ${c+1}`;
-    tp.style.left=(e.clientX+14)+'px';
-    tp.style.top=(e.clientY-10)+'px';
-    tp.style.display='block';
-  });
-  ca.addEventListener('mouseleave',()=>{ document.getElementById('ttip').style.display='none'; });
-}
-
-function screenToGrid(mx, my){
-  if(!grid) return null;
-  const cv = document.getElementById('mc');
-  const rect = cv.getBoundingClientRect();
-  // unproject mouse → canvas pixel
-  const cx = (mx - rect.left) / _zoom;
-  const cy = (my - rect.top)  / _zoom;
-
-  // iso → grid: x = ox + (c-r)*TW/2,  y = oy + (c+r)*TH/2
-  const ox = ROWS*(TW/2), oy = TH;
-  const dx = cx - ox;
-  const dy = cy - oy;
-  // solve: dx=(c-r)*TW/2, dy=(c+r)*TH/2
-  const col = Math.round(dx/(TW/2)/2 + dy/(TH/2)/2) >> 1;
-  // more accurate:
-  const c = Math.round((dx/(TW/2) + dy/(TH/2))/2);
-  const r = Math.round((dy/(TH/2) - dx/(TW/2))/2);
-  return{r,c};
-}
-
-function showTileInfo(tile, r, c){
-  const box = document.getElementById('selInfo');
-  document.getElementById('siName').textContent = tile.name;
-  document.getElementById('siPos').textContent = `Row ${r+1}, Col ${c+1}`;
-  box.style.display='block';
-  clearTimeout(box._t);
-  box._t=setTimeout(()=>{ box.style.display='none'; }, 3000);
-}
-
-function applyXform(){
-  const cv = document.getElementById('mc');
-  cv.style.transform=`translate(${_panX}px,${_panY}px) scale(${_zoom})`;
-  cv.style.transformOrigin='top left';
-}
-
-function zoom_(f, mx, my){
-  const cv=document.getElementById('mc');
-  const ca=document.getElementById('ca');
-  const caRect=ca.getBoundingClientRect();
-  const px = mx!==undefined ? mx-caRect.left : caRect.width/2;
-  const py = my!==undefined ? my-caRect.top  : caRect.height/2;
-  const prevZ=_zoom;
-  _zoom=Math.max(.15,Math.min(10,_zoom*f));
-  _panX = px - (_zoom/prevZ)*(px-_panX);
-  _panY = py - (_zoom/prevZ)*(py-_panY);
-  applyXform();
-}
-
-function fitView(){
-  const cv=document.getElementById('mc');
-  const ca=document.getElementById('ca');
-  if(cv.style.display==='none'||!cv.width) return;
-  const scaleX=ca.clientWidth/cv.width;
-  const scaleY=ca.clientHeight/cv.height;
-  _zoom=Math.min(scaleX,scaleY)*.92;
-  _panX=(ca.clientWidth  - cv.width *_zoom)/2;
-  _panY=(ca.clientHeight - cv.height*_zoom)/2;
-  applyXform();
-}
-
-// ═══════════════════════════════════════════
-//   STATS / BREAKDOWN
-// ═══════════════════════════════════════════
-function updateStats(){
-  if(!grid) return;
-  const tm=getTileMap();
-  const counts={};
-  let filled=0;
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const id=grid[r][c];
-    if(id!==null){ filled++; counts[id]=(counts[id]||0)+1; }
-  }
-  const types=Object.keys(counts).length;
-  const total=Object.values(counts).reduce((a,b)=>a+b,0);
-  const pct=Math.round(total/BUILDABLE*100);
-
-  document.getElementById('stT').textContent=total.toLocaleString();
-  document.getElementById('stU').textContent=types;
-  document.getElementById('stC').textContent=filled.toLocaleString();
-  document.getElementById('stP').textContent=pct+'%';
-
-  // breakdown
-  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  const bd=document.getElementById('breakdown');
-  bd.innerHTML='';
-  const ul=document.createElement('div');
-  ul.className='used-list';
-  sorted.forEach(([id,cnt])=>{
-    const t=tm[id]; if(!t) return;
-    const p=Math.round(cnt/total*100);
-    const swHtml = t.imgData
-      ? `<img class="tex-thumb" src="${t.imgData}" style="width:14px;height:14px;border-radius:3px;flex-shrink:0;object-fit:cover;border:1px solid rgba(255,255,255,.1)">`
-      : `<div class="sw" style="background:${t.color}"></div>`;
-    const row=document.createElement('div');
-    row.className='used-row';
-    row.innerHTML=`
-      ${swHtml}
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;justify-content:space-between">
-          <span class="rname">${t.name}</span>
-          <span class="rcnt">${cnt}</span>
-        </div>
-        <div class="pbar"><div class="pfill" style="width:${p}%"></div></div>
-      </div>`;
-    ul.appendChild(row);
-  });
-  bd.appendChild(ul);
-
-  // legend
-  const leg=document.getElementById('legend');
-  leg.innerHTML='';
-  const lb=document.createElement('div');
-  lb.className='legend-box';
-  sorted.forEach(([id])=>{
-    const t=tm[id]; if(!t) return;
-    const li=document.createElement('div');
-    li.className='leg-item';
-    li.innerHTML=`<div class="leg-sw" style="background:${t.color}"></div>${t.name}`;
-    lb.appendChild(li);
-  });
-  leg.appendChild(lb);
-}
-
-// ═══════════════════════════════════════════
-//   EXPORT
-// ═══════════════════════════════════════════
-function exportPNG(){
-  if(!grid){ alert('Generate layout first.'); return; }
-  showLoader('Exporting…');
-  setTimeout(()=>{
-    const cv=document.getElementById('mc');
-    const a=document.createElement('a');
-    a.download='crk-mapart.png';
-    a.href=cv.toDataURL('image/png');
-    a.click();
-    hideLoader();
-  },80);
-}
-
-// ═══════════════════════════════════════════
-//   LOADER
-// ═══════════════════════════════════════════
-function showLoader(msg){
-  document.getElementById('lt').textContent=msg||'Processing…';
-  document.getElementById('ld').style.display='flex';
-}
-function hideLoader(){ document.getElementById('ld').style.display='none'; }
+buildAllowedMap().then(a => {
+  allowed = a;
+  let free = 0; for (let i = 0; i < allowed.length; i++) if (allowed[i]) free++;
+  document.getElementById('free-count').textContent = free;
+  resizeCanvas();
+  canvasArea.classList.add('drawing');
+});
 </script>
 </body>
 </html>
