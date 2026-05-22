@@ -702,14 +702,22 @@ document.getElementById('apply-img').addEventListener('click', () => {
   if (!sourceImage) { alert('Сначала загрузите исходное изображение!'); return; }
   if (!tiles.length) { alert('Сначала загрузите плитки!'); return; }
 
-  // Sample the source image at each grid cell position
-  const oc = document.createElement('canvas');
-  oc.width = COLS; oc.height = ROWS;
-  const octx = oc.getContext('2d');
-  octx.drawImage(sourceImage, 0, 0, COLS, ROWS);
-  const imgData = octx.getImageData(0, 0, COLS, ROWS).data;
+  // We sample the source image using the ISO-projected position of each cell,
+  // normalised over the full iso bounding box.
+  // This means the image is mapped as it appears on screen (upright/flat),
+  // NOT along the grid axes — so it looks straight on the monitor.
+  const bounds = isoBounds();
 
-  // For each tile, compute its average colour
+  // Render source image at iso bounding-box resolution for sampling
+  const imgW = Math.round(bounds.w);
+  const imgH = Math.round(bounds.h);
+  const oc = document.createElement('canvas');
+  oc.width = imgW; oc.height = imgH;
+  const octx = oc.getContext('2d');
+  octx.drawImage(sourceImage, 0, 0, imgW, imgH);
+  const imgData = octx.getImageData(0, 0, imgW, imgH).data;
+
+  // For each tile compute its average colour (1×1 sample)
   const tileColors = tiles.map(tile => {
     const tc = document.createElement('canvas'); tc.width = 1; tc.height = 1;
     const tctx = tc.getContext('2d'); tctx.drawImage(tile.img, 0, 0, 1, 1);
@@ -721,7 +729,17 @@ document.getElementById('apply-img').addEventListener('click', () => {
     for (let col = 0; col < COLS; col++) {
       const idx = row * COLS + col;
       if (!allowed[idx]) continue;
-      const px = idx * 4;
+
+      // Centre of this cell in iso space (add half-tile offset)
+      const { sx, sy } = isoXY(col, row);
+      const cx = sx + TW / 2 - bounds.minX;
+      const cy = sy + TH / 2 - bounds.minY;
+
+      // Clamp to image bounds
+      const px_x = Math.max(0, Math.min(imgW - 1, Math.round(cx)));
+      const px_y = Math.max(0, Math.min(imgH - 1, Math.round(cy)));
+      const px = (px_y * imgW + px_x) * 4;
+
       const r = imgData[px], g = imgData[px+1], b = imgData[px+2];
       let best = null, bestDist = Infinity;
       for (const tc of tileColors) {
