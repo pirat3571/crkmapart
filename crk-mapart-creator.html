@@ -211,6 +211,22 @@
       </label>
       <input type="file" id="img-upload" accept="image/*">
       <div class="source-preview" id="source-preview"><img id="source-img" src="" alt=""></div>
+      <!-- Overlay controls, shown after image loaded -->
+      <div id="img-overlay-controls" style="display:none; margin-top:8px;">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:1px;text-transform:uppercase;">Позиционирование</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:6px;">
+          🖱 Тащи изображение на карте<br>
+          ↔ Углы — масштабирование
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+          <span style="font-size:11px;color:var(--muted);width:60px;">Прозрачность</span>
+          <input type="range" id="img-opacity" min="10" max="90" value="45" style="flex:1;">
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="tool-btn" id="img-fit-btn" style="flex:1;font-size:11px;">⛶ По размеру</button>
+          <button class="tool-btn" id="img-hide-btn" style="flex:1;font-size:11px;">👁 Скрыть</button>
+        </div>
+      </div>
     </div>
 
     <div class="sidebar-section">
@@ -310,6 +326,17 @@ let selectedTile = null;
 let tool = 'draw';
 let sourceImage = null;
 
+// Image overlay — position/scale in ISO-space units, relative to iso origin
+// imgOvX/Y: top-left corner of image in iso-space
+// imgOvW/H: size in iso-space units
+let imgOvX = 0, imgOvY = 0;
+let imgOvW = 0, imgOvH = 0;
+let imgOvVisible = false;
+let imgOvOpacity = 0.45;
+// image drag state
+let isDraggingImg = false;
+let imgDragStartX = 0, imgDragStartY = 0, imgDragStartOvX = 0, imgDragStartOvY = 0;
+
 // Viewport / pan-zoom
 let vpX = 0, vpY = 0;   // offset in screen pixels (centre of canvas area)
 let vpZoom = 1.0;
@@ -397,8 +424,36 @@ function render() {
   }
 
   ctx.restore();
-}
 
+  // ── Draw image overlay (before apply) ──
+  if (imgOvVisible && sourceImage) {
+    const bounds = isoBounds();
+    const originX = W / 2 + vpX - bounds.minX * vpZoom - bounds.w * vpZoom / 2;
+    const originY = H / 2 + vpY - bounds.minY * vpZoom - bounds.h * vpZoom / 2;
+    ctx.save();
+    ctx.translate(originX, originY);
+    ctx.scale(vpZoom, vpZoom);
+    ctx.globalAlpha = imgOvOpacity;
+    ctx.drawImage(sourceImage, imgOvX, imgOvY, imgOvW, imgOvH);
+    ctx.globalAlpha = 1;
+    // border
+    ctx.strokeStyle = '#f4a83a';
+    ctx.lineWidth = 2 / vpZoom;
+    ctx.setLineDash([6 / vpZoom, 4 / vpZoom]);
+    ctx.strokeRect(imgOvX, imgOvY, imgOvW, imgOvH);
+    ctx.setLineDash([]);
+    // corner handles
+    ctx.fillStyle = '#f4a83a';
+    const hs = 6 / vpZoom;
+    for (const [hx, hy] of [
+      [imgOvX, imgOvY], [imgOvX + imgOvW, imgOvY],
+      [imgOvX, imgOvY + imgOvH], [imgOvX + imgOvW, imgOvY + imgOvH]
+    ]) {
+      ctx.fillRect(hx - hs/2, hy - hs/2, hs, hs);
+    }
+    ctx.restore();
+  }
+}
 function drawCell(sx, sy, isAllowed, tileData) {
   const hw = TW / 2, hh = TH / 2;
 
@@ -466,7 +521,42 @@ function screenToGrid(screenX, screenY) {
   return { col, row };
 }
 
-// ─── INTERACTION ─────────────────────────────────────────────────────────────
+// Convert screen position → iso-space coordinates
+function screenToIso(screenX, screenY) {
+  const W = canvas.width, H = canvas.height;
+  const bounds = isoBounds();
+  const originX = W / 2 + vpX - bounds.minX * vpZoom - bounds.w * vpZoom / 2;
+  const originY = H / 2 + vpY - bounds.minY * vpZoom - bounds.h * vpZoom / 2;
+  return {
+    ix: (screenX - originX) / vpZoom,
+    iy: (screenY - originY) / vpZoom,
+  };
+}
+
+// Hit-test whether screen point is inside the image overlay
+function isOverImg(screenX, screenY) {
+  if (!imgOvVisible || !sourceImage) return false;
+  const { ix, iy } = screenToIso(screenX, screenY);
+  return ix >= imgOvX && ix <= imgOvX + imgOvW && iy >= imgOvY && iy <= imgOvY + imgOvH;
+}
+
+// Hit-test corner resize handles (returns handle index 0-3 or -1)
+function hitImgHandle(screenX, screenY) {
+  if (!imgOvVisible || !sourceImage) return -1;
+  const { ix, iy } = screenToIso(screenX, screenY);
+  const hs = 10 / vpZoom;
+  const corners = [
+    [imgOvX, imgOvY], [imgOvX + imgOvW, imgOvY],
+    [imgOvX, imgOvY + imgOvH], [imgOvX + imgOvW, imgOvY + imgOvH]
+  ];
+  for (let i = 0; i < corners.length; i++) {
+    if (Math.abs(ix - corners[i][0]) < hs && Math.abs(iy - corners[i][1]) < hs) return i;
+  }
+  return -1;
+}
+
+let resizingHandle = -1;
+let resizeStartIso = null, resizeStartRect = null;
 const canvasArea = document.getElementById('canvas-area');
 
 canvasArea.addEventListener('wheel', e => {
@@ -495,19 +585,46 @@ document.addEventListener('keyup',   e => { if (e.code === 'Space') spaceDown = 
 
 canvasArea.addEventListener('mousedown', e => {
   if (e.button !== 0) return;
+  const rect = canvasArea.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
   if (spaceDown || tool === 'pan') {
     isPanning = true;
     panStartX = e.clientX; panStartY = e.clientY;
     panStartVpX = vpX; panStartVpY = vpY;
     canvasArea.classList.add('grabbing');
     canvasArea.classList.remove('drawing');
-  } else {
-    isMouseDownDraw = true;
-    handlePaint(e);
+    return;
   }
+
+  // Image overlay interactions (when visible, take priority over draw)
+  if (imgOvVisible && sourceImage) {
+    const h = hitImgHandle(sx, sy);
+    if (h !== -1) {
+      resizingHandle = h;
+      resizeStartIso = screenToIso(sx, sy);
+      resizeStartRect = { x: imgOvX, y: imgOvY, w: imgOvW, h: imgOvH };
+      canvasArea.classList.add('grabbing');
+      return;
+    }
+    if (isOverImg(sx, sy)) {
+      isDraggingImg = true;
+      const iso = screenToIso(sx, sy);
+      imgDragStartX = iso.ix; imgDragStartY = iso.iy;
+      imgDragStartOvX = imgOvX; imgDragStartOvY = imgOvY;
+      canvasArea.classList.add('grabbing');
+      return;
+    }
+  }
+
+  isMouseDownDraw = true;
+  handlePaint(e);
 });
 
 document.addEventListener('mousemove', e => {
+  const rect = canvasArea.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
   if (isPanning) {
     vpX = panStartVpX + (e.clientX - panStartX);
     vpY = panStartVpY + (e.clientY - panStartY);
@@ -515,8 +632,38 @@ document.addEventListener('mousemove', e => {
     return;
   }
 
-  const rect = canvasArea.getBoundingClientRect();
-  const cell = screenToGrid(e.clientX - rect.left, e.clientY - rect.top);
+  if (isDraggingImg) {
+    const iso = screenToIso(sx, sy);
+    imgOvX = imgDragStartOvX + (iso.ix - imgDragStartX);
+    imgOvY = imgDragStartOvY + (iso.iy - imgDragStartY);
+    render();
+    return;
+  }
+
+  if (resizingHandle !== -1) {
+    const iso = screenToIso(sx, sy);
+    const dx = iso.ix - resizeStartIso.ix;
+    const dy = iso.iy - resizeStartIso.iy;
+    let { x, y, w, h } = resizeStartRect;
+    // handle 0=TL 1=TR 2=BL 3=BR
+    if (resizingHandle === 0) { x += dx; y += dy; w -= dx; h -= dy; }
+    if (resizingHandle === 1) { y += dy; w += dx; h -= dy; }
+    if (resizingHandle === 2) { x += dx; w -= dx; h += dy; }
+    if (resizingHandle === 3) { w += dx; h += dy; }
+    if (w > 10 && h > 10) { imgOvX = x; imgOvY = y; imgOvW = w; imgOvH = h; }
+    render();
+    return;
+  }
+
+  // Update cursor based on hover
+  if (imgOvVisible && sourceImage) {
+    const h = hitImgHandle(sx, sy);
+    if (h !== -1) { canvasArea.style.cursor = 'nwse-resize'; return; }
+    if (isOverImg(sx, sy)) { canvasArea.style.cursor = 'grab'; }
+    else { canvasArea.style.cursor = ''; }
+  }
+
+  const cell = screenToGrid(sx, sy);
   const tooltip = document.getElementById('tooltip');
 
   if (cell) {
@@ -545,6 +692,9 @@ document.addEventListener('mouseup', e => {
     canvasArea.classList.remove('grabbing');
     if (!spaceDown) canvasArea.classList.add('drawing');
   }
+  isDraggingImg = false;
+  resizingHandle = -1;
+  canvasArea.style.cursor = '';
   isMouseDownDraw = false;
 });
 
@@ -702,15 +852,9 @@ document.getElementById('apply-img').addEventListener('click', () => {
   if (!sourceImage) { alert('Сначала загрузите исходное изображение!'); return; }
   if (!tiles.length) { alert('Сначала загрузите плитки!'); return; }
 
-  // We sample the source image using the ISO-projected position of each cell,
-  // normalised over the full iso bounding box.
-  // This means the image is mapped as it appears on screen (upright/flat),
-  // NOT along the grid axes — so it looks straight on the monitor.
-  const bounds = isoBounds();
-
-  // Render source image at iso bounding-box resolution for sampling
-  const imgW = Math.round(bounds.w);
-  const imgH = Math.round(bounds.h);
+  // Render source image into an offscreen canvas the size of the overlay rect
+  const imgW = Math.max(1, Math.round(imgOvW));
+  const imgH = Math.max(1, Math.round(imgOvH));
   const oc = document.createElement('canvas');
   oc.width = imgW; oc.height = imgH;
   const octx = oc.getContext('2d');
@@ -730,14 +874,20 @@ document.getElementById('apply-img').addEventListener('click', () => {
       const idx = row * COLS + col;
       if (!allowed[idx]) continue;
 
-      // Centre of this cell in iso space (add half-tile offset)
+      // Centre of this cell in iso space
       const { sx, sy } = isoXY(col, row);
-      const cx = sx + TW / 2 - bounds.minX;
-      const cy = sy + TH / 2 - bounds.minY;
+      const cx = sx + TW / 2;
+      const cy = sy + TH / 2;
 
-      // Clamp to image bounds
-      const px_x = Math.max(0, Math.min(imgW - 1, Math.round(cx)));
-      const px_y = Math.max(0, Math.min(imgH - 1, Math.round(cy)));
+      // Map to overlay-local coordinates
+      const localX = cx - imgOvX;
+      const localY = cy - imgOvY;
+
+      // Skip cells outside the overlay
+      if (localX < 0 || localX >= imgOvW || localY < 0 || localY >= imgOvH) continue;
+
+      const px_x = Math.max(0, Math.min(imgW - 1, Math.round(localX * imgW / imgOvW)));
+      const px_y = Math.max(0, Math.min(imgH - 1, Math.round(localY * imgH / imgOvH)));
       const px = (px_y * imgW + px_x) * 4;
 
       const r = imgData[px], g = imgData[px+1], b = imgData[px+2];
@@ -749,6 +899,8 @@ document.getElementById('apply-img').addEventListener('click', () => {
       grid[idx] = best;
     }
   }
+  imgOvVisible = false;
+  document.getElementById('img-overlay-controls').style.display = 'none';
   render();
   updateCounts();
 });
@@ -785,10 +937,43 @@ document.getElementById('img-upload').addEventListener('change', e => {
       sourceImage = img;
       document.getElementById('source-preview').style.display = 'block';
       document.getElementById('source-img').src = ev.target.result;
+      // Place overlay centered on the map, fitted to iso bounding box
+      const bounds = isoBounds();
+      const aspect = img.naturalWidth / img.naturalHeight;
+      imgOvW = bounds.w;
+      imgOvH = bounds.w / aspect;
+      imgOvX = bounds.minX;
+      imgOvY = bounds.minY + (bounds.h - imgOvH) / 2;
+      imgOvVisible = true;
+      document.getElementById('img-overlay-controls').style.display = 'block';
+      render();
     };
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
+});
+
+document.getElementById('img-opacity').addEventListener('input', e => {
+  imgOvOpacity = parseInt(e.target.value) / 100;
+  render();
+});
+
+document.getElementById('img-fit-btn').addEventListener('click', () => {
+  if (!sourceImage) return;
+  const bounds = isoBounds();
+  const aspect = sourceImage.naturalWidth / sourceImage.naturalHeight;
+  imgOvW = bounds.w;
+  imgOvH = bounds.w / aspect;
+  imgOvX = bounds.minX;
+  imgOvY = bounds.minY + (bounds.h - imgOvH) / 2;
+  imgOvVisible = true;
+  render();
+});
+
+document.getElementById('img-hide-btn').addEventListener('click', () => {
+  imgOvVisible = !imgOvVisible;
+  document.getElementById('img-hide-btn').textContent = imgOvVisible ? '👁 Скрыть' : '👁 Показать';
+  render();
 });
 
 document.getElementById('tiles-upload').addEventListener('change', e => { loadTiles(e.target.files); });
@@ -807,7 +992,18 @@ document.addEventListener('drop', e => {
     const reader = new FileReader();
     reader.onload = ev => {
       const img = new Image();
-      img.onload = () => { sourceImage = img; document.getElementById('source-preview').style.display = 'block'; document.getElementById('source-img').src = ev.target.result; };
+      img.onload = () => {
+        sourceImage = img;
+        document.getElementById('source-preview').style.display = 'block';
+        document.getElementById('source-img').src = ev.target.result;
+        const bounds = isoBounds();
+        const aspect = img.naturalWidth / img.naturalHeight;
+        imgOvW = bounds.w; imgOvH = bounds.w / aspect;
+        imgOvX = bounds.minX; imgOvY = bounds.minY + (bounds.h - imgOvH) / 2;
+        imgOvVisible = true;
+        document.getElementById('img-overlay-controls').style.display = 'block';
+        render();
+      };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(imgs[0]);
