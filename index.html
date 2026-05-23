@@ -120,7 +120,7 @@
       <div class="toolbar">
         <button class="tool-btn active" id="tool-draw">✏ Рисовать</button>
         <button class="tool-btn" id="tool-erase">✕ Ластик</button>
-        <button class="tool-btn" id="tool-fill">⬛ Залить</button>
+        <button class="tool-btn" id="tool-fill">🪣 Заливка</button>
       </div>
       <button class="fill-all-btn" id="apply-img">🎨 Применить изображение</button>
       <button class="fill-all-btn" id="clear-btn" style="margin-top:4px;border-color:#c0392b;color:#e87d7d;">🗑 Очистить карту</button>
@@ -246,16 +246,16 @@ function screenToIso(sx,sy) {
 }
 
 function isoToGrid(ix,iy) {
-  const row = Math.round( ix/TW + iy/TH );
-  const col = Math.round( ix/TW - iy/TH );
+  // Shift by half-tile so rounding snaps to the correct cell
+  const row = Math.round( (ix - TW/2) / TW + iy / TH );
+  const col = Math.round( (ix - TW/2) / TW - iy / TH );
   if (col<0||col>=COLS||row<0||row>=ROWS) return null;
   return {col,row};
 }
 
 function screenToGrid(sx,sy) {
   const iso=screenToIso(sx,sy);
-  const cell=isoToGrid(iso.ix,iso.iy);
-  return cell;
+  return isoToGrid(iso.ix,iso.iy);
 }
 
 // ═══ RENDER ═══════════════════════════════════════════════════════════════════
@@ -338,11 +338,38 @@ function drawCell(col,row) {
 function paintCell(col,row) {
   const idx=row*COLS+col;
   if (!allowed[idx]) return;
-  if (tool==='erase') grid[idx]=null;
-  else if (selectedTile) grid[idx]=selectedTile;
-  else return;
-  render();
-  updateCounts();
+  if (tool==='erase') { grid[idx]=null; render(); updateCounts(); }
+  else if (tool==='fill') { floodFill(col,row); }
+  else if (selectedTile) { grid[idx]=selectedTile; render(); updateCounts(); }
+}
+
+function floodFill(startCol,startRow) {
+  if (!selectedTile) return;
+  const startIdx=startRow*COLS+startCol;
+  if (!allowed[startIdx]) return;
+  const targetName = grid[startIdx] ? grid[startIdx].name : null;
+  // Don't fill if already the same tile
+  if (targetName === selectedTile.name) return;
+
+  const queue=[[startCol,startRow]];
+  const visited=new Set([startIdx]);
+
+  while (queue.length) {
+    const [c,r]=queue.shift();
+    const idx=r*COLS+c;
+    if (!allowed[idx]) continue;
+    const cellName = grid[idx] ? grid[idx].name : null;
+    if (cellName !== targetName) continue;
+    grid[idx]=selectedTile;
+    // 4 neighbours (iso-grid adjacency)
+    for (const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nc=c+dc, nr=r+dr;
+      if (nc<0||nc>=COLS||nr<0||nr>=ROWS) continue;
+      const nidx=nr*COLS+nc;
+      if (!visited.has(nidx)) { visited.add(nidx); queue.push([nc,nr]); }
+    }
+  }
+  render(); updateCounts();
 }
 
 // ═══ IMAGE OVERLAY HIT TESTS ══════════════════════════════════════════════════
@@ -708,12 +735,7 @@ document.getElementById('img-hide-btn').addEventListener('click',()=>{
 // ═══ TOOLS ════════════════════════════════════════════════════════════════════
 document.getElementById('tool-draw').addEventListener('click',()=>setTool('draw'));
 document.getElementById('tool-erase').addEventListener('click',()=>setTool('erase'));
-document.getElementById('tool-fill').addEventListener('click',()=>{
-  if(!selectedTile){alert('Выберите плитку!');return;}
-  if(!confirm('Залить все свободные ячейки?')) return;
-  for(let i=0;i<COLS*ROWS;i++) if(allowed[i]&&!grid[i]) grid[i]=selectedTile;
-  render();updateCounts();
-});
+document.getElementById('tool-fill').addEventListener('click',()=>setTool('fill'));
 document.getElementById('clear-btn').addEventListener('click',()=>{
   if(!confirm('Очистить всю карту?')) return;
   grid.fill(null);render();updateCounts();
