@@ -78,6 +78,8 @@
   <h1>🍪 CRK Map Art Planner</h1>
   <span class="subtitle">64×60 · iso</span>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <button class="tool-btn" id="btn-undo" disabled title="Отменить (Ctrl+Z)" style="font-size:16px;padding:4px 10px;">↩</button>
+    <button class="tool-btn" id="btn-redo" disabled title="Повторить (Ctrl+Y)" style="font-size:16px;padding:4px 10px;">↪</button>
     <button class="export-btn" id="export-btn">⬇ Экспорт PNG</button>
   </div>
 </header>
@@ -208,6 +210,37 @@ let selectedTile  = null;
 let tool = 'draw';
 let sourceImage   = null;
 
+// Undo/redo stacks — each entry is a shallow copy of grid array
+let undoStack = [];
+let redoStack = [];
+const MAX_HISTORY = 50;
+
+function saveHistory() {
+  undoStack.push(grid.slice());
+  if (undoStack.length > MAX_HISTORY) undoStack.shift();
+  redoStack = [];
+  updateUndoButtons();
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  redoStack.push(grid.slice());
+  grid = undoStack.pop();
+  render(); updateCounts(); updateUndoButtons();
+}
+
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(grid.slice());
+  grid = redoStack.pop();
+  render(); updateCounts(); updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  document.getElementById('btn-undo').disabled = undoStack.length === 0;
+  document.getElementById('btn-redo').disabled = redoStack.length === 0;
+}
+
 // Image overlay state (in iso-space coordinates)
 let imgOvX=0,imgOvY=0,imgOvW=0,imgOvH=0;
 let imgOvVisible=false,imgOvOpacity=0.45;
@@ -246,9 +279,8 @@ function screenToIso(sx,sy) {
 }
 
 function isoToGrid(ix,iy) {
-  // Shift by half-tile so rounding snaps to the correct cell
-  const row = Math.round( (ix - TW/2) / TW + iy / TH );
-  const col = Math.round( (ix - TW/2) / TW - iy / TH );
+  const row = Math.round( (ix - TW/2) / TW + (iy - TH/2) / TH );
+  const col = Math.round( (ix - TW/2) / TW - (iy - TH/2) / TH );
   if (col<0||col>=COLS||row<0||row>=ROWS) return null;
   return {col,row};
 }
@@ -335,12 +367,17 @@ function drawCell(col,row) {
 }
 
 // ═══ PAINT ════════════════════════════════════════════════════════════════════
-function paintCell(col,row) {
+function paintCellNoHistory(col,row) {
   const idx=row*COLS+col;
   if (!allowed[idx]) return;
   if (tool==='erase') { grid[idx]=null; render(); updateCounts(); }
   else if (tool==='fill') { floodFill(col,row); }
   else if (selectedTile) { grid[idx]=selectedTile; render(); updateCounts(); }
+}
+
+function paintCell(col,row) {
+  if (tool==='draw'||tool==='erase') saveHistory();
+  paintCellNoHistory(col,row);
 }
 
 function floodFill(startCol,startRow) {
@@ -406,7 +443,13 @@ canvasArea.addEventListener('wheel',e=>{
   render();
 },{passive:false});
 
-document.addEventListener('keydown',e=>{ if(e.code==='Space'){spaceDown=true;e.preventDefault();} });
+document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-redo').addEventListener('click', redo);
+document.addEventListener('keydown',e=>{
+  if (e.code==='Space'){spaceDown=true;e.preventDefault();return;}
+  if ((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'&&!e.shiftKey){e.preventDefault();undo();}
+  if ((e.ctrlKey||e.metaKey)&&(e.code==='KeyY'||(e.code==='KeyZ'&&e.shiftKey))){e.preventDefault();redo();}
+});
 document.addEventListener('keyup',  e=>{ if(e.code==='Space') spaceDown=false; });
 
 canvasArea.addEventListener('mousedown',e=>{
@@ -443,8 +486,9 @@ canvasArea.addEventListener('mousedown',e=>{
 
   // Draw/erase
   isMouseDown=true;
+  if (tool==='draw'||tool==='erase') saveHistory();
   const cell=screenToGrid(sx,sy);
-  if (cell) paintCell(cell.col,cell.row);
+  if (cell) paintCellNoHistory(cell.col,cell.row);
 });
 
 document.addEventListener('mousemove',e=>{
@@ -498,7 +542,7 @@ document.addEventListener('mousemove',e=>{
       tooltip.style.top=(e.clientY-6)+'px';
       tooltip.textContent=t.name;
     } else tooltip.style.opacity='0';
-    if (isMouseDown) paintCell(cell.col,cell.row);
+    if (isMouseDown) paintCellNoHistory(cell.col,cell.row);
   } else {
     tooltip.style.opacity='0';
     document.getElementById('pos-label').textContent='—';
@@ -738,6 +782,7 @@ document.getElementById('tool-erase').addEventListener('click',()=>setTool('eras
 document.getElementById('tool-fill').addEventListener('click',()=>setTool('fill'));
 document.getElementById('clear-btn').addEventListener('click',()=>{
   if(!confirm('Очистить всю карту?')) return;
+  saveHistory();
   grid.fill(null);render();updateCounts();
 });
 function setTool(t){
@@ -801,6 +846,7 @@ document.getElementById('apply-img').addEventListener('click',()=>{
   }
   imgOvVisible=false;
   document.getElementById('img-overlay-controls').style.display='none';
+  saveHistory();
   render();updateCounts();
 });
 
@@ -829,7 +875,50 @@ function updateCounts(){
 
 // ═══ EXPORT ═══════════════════════════════════════════════════════════════════
 document.getElementById('export-btn').addEventListener('click',()=>{
-  const a=document.createElement('a');a.download='crk-map-art.png';a.href=canvas.toDataURL('image/png');a.click();
+  const SCALE = 2; // 2× for crisp PNG
+  const b = isoBounds();
+  const PAD = 20;
+  const oc = document.createElement('canvas');
+  oc.width  = Math.ceil(b.w + PAD*2) * SCALE;
+  oc.height = Math.ceil(b.h + PAD*2) * SCALE;
+  const octx = oc.getContext('2d');
+  octx.scale(SCALE, SCALE);
+  octx.translate(-b.minX + PAD, -b.minY + PAD);
+
+  // Dark background
+  octx.fillStyle = '#0d0f14';
+  octx.fillRect(b.minX - PAD, b.minY - PAD, b.w + PAD*2, b.h + PAD*2);
+
+  // Draw all cells
+  for (let s=0;s<COLS+ROWS-1;s++) {
+    for (let col=0;col<COLS;col++) {
+      const row=s-col;
+      if (row<0||row>=ROWS) continue;
+      const idx=row*COLS+col;
+      const {sx,sy}=isoXY(col,row);
+      const hw=TW/2, hh=TH/2, cx=sx+hw, cy=sy+hh;
+      octx.beginPath();
+      octx.moveTo(cx,sy); octx.lineTo(sx+TW,cy); octx.lineTo(cx,sy+TH); octx.lineTo(sx,cy);
+      octx.closePath();
+      const td=grid[idx];
+      if (td&&td.img) {
+        octx.save(); octx.clip();
+        octx.drawImage(td.img,sx,sy,TW,TH);
+        octx.restore();
+        octx.strokeStyle='rgba(0,0,0,0.25)'; octx.lineWidth=0.5; octx.stroke();
+      } else if (allowed[idx]) {
+        octx.fillStyle='rgba(255,255,255,0.07)'; octx.fill();
+        octx.strokeStyle='rgba(255,255,255,0.12)'; octx.lineWidth=0.5; octx.stroke();
+      } else {
+        octx.fillStyle='rgba(0,0,0,0.55)'; octx.fill();
+      }
+    }
+  }
+
+  const a=document.createElement('a');
+  a.download='crk-map-art.png';
+  a.href=oc.toDataURL('image/png');
+  a.click();
 });
 
 // ═══ DRAG & DROP ══════════════════════════════════════════════════════════════
