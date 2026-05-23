@@ -245,28 +245,17 @@ function screenToIso(sx,sy) {
   return { ix:(sx-ox)/vpZoom, iy:(sy-oy)/vpZoom };
 }
 
-// iso-space → grid cell (col,row), returns null if outside or not on a diamond
 function isoToGrid(ix,iy) {
-  // Invert: sx=(row+col)*TW/2, sy=(row-col)*TH/2
-  // u = row+col = 2*ix/TW
-  // v = row-col = 2*iy/TH
-  const u = (2*ix)/TW;
-  const v = (2*iy)/TH;
-  const row = Math.round((u+v)/2);
-  const col = Math.round((u-v)/2);
+  const row = Math.round( ix/TW + iy/TH );
+  const col = Math.round( ix/TW - iy/TH );
   if (col<0||col>=COLS||row<0||row>=ROWS) return null;
-  // Fine diamond hit-test
-  const {sx,sy}=isoXY(col,row);
-  const cx=sx+TW/2, cy=sy+TH/2;
-  const dx=Math.abs(ix-cx)/(TW/2);
-  const dy=Math.abs(iy-cy)/(TH/2);
-  if (dx+dy>1.05) return null;
   return {col,row};
 }
 
 function screenToGrid(sx,sy) {
   const iso=screenToIso(sx,sy);
-  return isoToGrid(iso.ix,iso.iy);
+  const cell=isoToGrid(iso.ix,iso.iy);
+  return cell;
 }
 
 // ═══ RENDER ═══════════════════════════════════════════════════════════════════
