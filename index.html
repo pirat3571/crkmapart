@@ -393,7 +393,7 @@ function screenToSub(sx,sy){
 // Returns {dc,dr} in sub-grid units (DCOLS×DROWS = 256×240).
 function screenToDecoUnit(sx,sy){
   const{ix,iy}=screenToIso(sx,sy);
-  const dc=Math.round(ix/SW - iy/SH) + DECO_OFFSET;
+  const dc=Math.round(ix/SW - iy/SH);
   const dr=Math.round(ix/SW + iy/SH);
   return {dc,dr};
 }
@@ -445,7 +445,7 @@ function render(){
   if(decosVisible){
     const decoArr=[...gridDecos.values()].sort((a,b)=>(a.dr+a.dc)-(b.dr+b.dc));
     for(const d of decoArr){
-      const sc=d.dc - DECO_OFFSET, sr=d.dr;
+      const sc=d.dc, sr=d.dr;
       const{sx,sy}=isoXY(sc,sr);
       ctx.drawImage(d.deco.img, sx - DECO_VW/2, sy, DECO_VW, DECO_VH);
     }
@@ -527,14 +527,14 @@ const DROWS = SROWS;
 // Deco coordinate offset: deco(0,0) = left vertex of tile(0,0) = isoXY(-TILE, 0)
 // So render deco(dc,dr) at isoXY(dc - TILE, dr - TILE)
 // And hit-test: dc = round(ix/SW - iy/SH) + TILE
-const DECO_OFFSET = TILE;
+
 
 function paintAt(screenX, screenY){
   if(activeLayer==='deco'){
     // Hit-test snaps to the sub-grid (step=1, same resolution as isoToSub),
     // independent of the deco's visual (rendered) size.
     const{ix,iy}=screenToIso(screenX,screenY);
-    const dc=Math.round(ix/SW - iy/SH) + DECO_OFFSET;
+    const dc=Math.round(ix/SW - iy/SH);
     const dr=Math.round(ix/SW + iy/SH);
     if(dc<0||dc>=DCOLS||dr<0||dr>=DROWS)return;
     if(tool==='erase'){
@@ -564,10 +564,15 @@ function paintAt(screenX, screenY){
 // Is deco at sub-cell (dc,dr) allowed? Deco occupies a 2×2 footprint (dc..dc+1, dr..dr+1).
 // Allowed if at least one of the underlying tile cells is buildable.
 function decoAllowed(dc,dr){
+  // Convert deco footprint corners to iso-space, then use tile hit-test
+  // (Math.floor(sc/TILE) is wrong because the iso sub-grid is rotated 45° relative to tiles)
   let any=false;
-  for(let i=0;i<DECO_SPAN;i++)for(let j=0;j<DECO_SPAN;j++){
-    const sc=dc - DECO_OFFSET + i, sr=dr + j;
-    const tc=Math.floor(sc/TILE), tr=Math.floor(sr/TILE);
+  for(let i=0;i<DECO_SPAN;i++) for(let j=0;j<DECO_SPAN;j++){
+    const sc=dc+i, sr=dr+j;
+    const ix=(sc+sr)*(SW/2), iy=(sr-sc)*(SH/2);
+    const ty=iy-TILE_VH/2;
+    const tc=Math.round(ix/TILE_VW - ty/TILE_VH);
+    const tr=Math.round(ix/TILE_VW + ty/TILE_VH);
     if(tc>=0&&tc<64&&tr>=0&&tr<60&&allowedTile[tr*64+tc]) any=true;
   }
   return any;
@@ -610,7 +615,7 @@ function showGhost(dc,dr){
   if(!selectedDeco||activeLayer!=='deco'||tool==='erase')return hideGhost();
   if(dc<0||dc>=DCOLS||dr<0||dr>=DROWS)return hideGhost();
   const{ox,oy}=getOrigin();
-  const sc=dc - DECO_OFFSET, sr=dr;
+  const sc=dc, sr=dr;
   const{sx,sy}=isoXY(sc,sr);
   ghostCanvas.style.left=((sx-DECO_VW/2)*vpZoom+ox)+'px';
   ghostCanvas.style.top =(sy*vpZoom+oy)+'px';
@@ -1058,7 +1063,7 @@ document.getElementById('apply-img').addEventListener('click',()=>{
     // Iterate with step=DECO_SPAN so each placed deco's footprint doesn't overlap the next.
     for(let dr=0;dr<DROWS;dr+=DECO_SPAN)for(let dc=0;dc<DCOLS;dc+=DECO_SPAN){
       if(!decoAllowed(dc,dr))continue;
-      const sc=dc - DECO_OFFSET, sr=dr;
+      const sc=dc, sr=dr;
       const{sx,sy}=isoXY(sc,sr);
       const cx=sx+DECO_VW/2, cy=sy+DECO_VH/2; // sample at visual centre of rendered deco
       const uN=(cx-imgOvX)/imgOvW,vN=(cy-imgOvY)/imgOvH;
@@ -1143,7 +1148,7 @@ document.getElementById('export-btn').addEventListener('click',()=>{
     }
   }
   const dArr=[...gridDecos.values()].sort((a,b2)=>(a.dr+a.dc)-(b2.dr+b2.dc));
-  for(const d of dArr){const sc=d.dc-DECO_OFFSET,sr=d.dr;const{sx,sy}=isoXY(sc,sr);octx.drawImage(d.deco.img,sx-DECO_VW/2,sy,DECO_VW,DECO_VH);}
+  for(const d of dArr){const sc=d.dc,sr=d.dr;const{sx,sy}=isoXY(sc,sr);octx.drawImage(d.deco.img,sx-DECO_VW/2,sy,DECO_VW,DECO_VH);}
   const a=document.createElement('a'); a.download='crk-map-art.png'; a.href=oc.toDataURL('image/png'); a.click();
 });
 
