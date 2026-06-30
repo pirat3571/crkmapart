@@ -393,8 +393,8 @@ function screenToSub(sx,sy){
 // Returns {dc,dr} in sub-grid units (DCOLS×DROWS = 256×240).
 function screenToDecoUnit(sx,sy){
   const{ix,iy}=screenToIso(sx,sy);
-  const dc=Math.round(ix/SW - iy/SH);
-  const dr=Math.round(ix/SW + iy/SH);
+  const dc=Math.round(ix/SW - iy/SH)+DECO_OFF;
+  const dr=Math.round(ix/SW + iy/SH)+DECO_OFF;
   return {dc,dr};
 }
 // Snap sub-cell to tile grid (multiples of TILE)
@@ -445,56 +445,86 @@ function render(){
   if(decosVisible){
     const decoArr=[...gridDecos.values()].sort((a,b)=>(a.dr+a.dc)-(b.dr+b.dc));
     for(const d of decoArr){
-      const sc=d.dc, sr=d.dr;
+      const sc=d.dc-DECO_OFF, sr=d.dr-DECO_OFF;
       const{sx,sy}=isoXY(sc,sr);
       ctx.drawImage(d.deco.img, sx - DECO_VW/2, sy, DECO_VW, DECO_VH);
     }
   }
 
-  // Grid overlay
-  // Family A: lines of constant sc → connect left-vertices along sr axis
-  //   left vertex of (sc,sr) = (isoXY(sc,sr).sx,  isoXY(sc,sr).sy + SH/2)
-  //   But isoXY(sc,sr).sy + SH/2 = (sr-sc)*SH/2 + SH/2 — changes with sr, not sc.
-  //   As sr increases, sx increases by SW/2 and sy increases by SH/2.
-  //   So the line of constant sc runs from (sc,0).left to (sc,SROWS).left.
-  // Family B: lines of constant sr → connect top-vertices along sc axis
-  //   top vertex of (sc,sr) = (isoXY(sc,sr).sx + SW/2, isoXY(sc,sr).sy)
+  // Grid overlay — drawn through actual tile diamond vertices for pixel-perfect alignment.
+  // Tile(tc,tr) top vertex = isoXY(tc*TILE, tr*TILE).
+  // Left vertex of tile(tc,tr) = isoXY(tc*TILE - TILE, tr*TILE) (i.e. isoXY shifted left by TILE).
+  //
+  // Family A (col boundaries): for each tc=0..64, draw a line through the LEFT VERTICES
+  //   of all tiles in that column boundary (from tr=0 to tr=60).
+  //   Left vertex of boundary tc at row tr = isoXY(tc*TILE-TILE, tr*TILE) + (0, TILE_VH/2)
+  //
+  // Family B (row boundaries): for each tr=0..60, draw a line through the TOP VERTICES
+  //   of all tiles in that row boundary (from tc=0 to tc=63).
+  //   Top vertex of boundary tr at col tc = isoXY(tc*TILE, tr*TILE)
+  //
+  // For sub-grid (2x2 and 1x1): add intermediate lines with fractional tile steps.
   if(gridMode > 0){
-    // Always draw tile lines; additionally draw deco (2x2) or 1x1 sub lines
-    const step = gridMode===1 ? DECO : 1;
     ctx.lineWidth = 0.5 / vpZoom;
+    const subStep = gridMode===1 ? DECO : 1; // sub-unit step for fine grid
 
-    // Family A: sc=const → left-vertex lines going ↘
-    // Left vertex of sub-cell(sc,sr) = (isoXY(sc,sr).sx - hw, isoXY(sc,sr).sy + hh)
-    // hw/hh depend on what kind of boundary sc is:
-    //   tile boundary (sc%TILE==0): hw=TILE_VW/2, hh=TILE_VH/2
-    //   deco boundary (sc%DECO==0): hw=DECO_VW/2, hh=DECO_VH/2
-    //   sub boundary:               hw=SW/2,       hh=SH/2
-    for(let sc=0; sc<=SCOLS; sc+=step){
-      const onTile=(sc%TILE===0), onDeco=(sc%DECO===0);
+    // Family A: column boundaries. For tc=0..64, the boundary line passes through
+    // the TOP vertex of each tile in that column: isoXY(tc*TILE, tr*TILE) for tr=0..60.
+    // This is equivalent to a line from isoXY(tc*TILE, 0) to isoXY(tc*TILE, SROWS)
+    // BUT offset by (-TILE_VW/2, +TILE_VH/2) to hit the LEFT vertex of the tile diamond,
+    // which is where the actual tile edge is.
+    // Simpler: the column boundary at tc passes through the RIGHT vertex of tile(tc-1,tr)
+    // = isoXY((tc-1)*TILE, tr*TILE) + (TILE_VW/2, TILE_VH/2)
+    // = isoXY(tc*TILE, tr*TILE) - (TILE_VW/2, TILE_VH/2)... 
+    // Even simpler: just draw tc=0..64 using tc directly:
+    const numTC = Math.floor(SCOLS/TILE); // =64
+    for(let tci = 0; tci <= numTC; tci++){
+      const sc = tci * TILE;
+      // For sub-grid, add intermediate lines within each tile
+      const steps = (tci < numTC) ? Math.floor(TILE/subStep) : 0;
+      const linesToDraw = tci === 0 ? [0] : 
+                          subStep >= TILE ? [0] :
+                          Array.from({length: Math.floor(TILE/subStep)}, (_,i) => i*subStep)
+                            .filter(x => x===0 || (tci===numTC ? false : true));
+      // Simplified: just draw all s values from 0..SCOLS with subStep
+      break; // exit, use the simple loop below
+    }
+    // Simple correct version: s goes from 0 to SCOLS inclusive (tc=0 top-vertex to tc=64 top-vertex)
+    // The top-vertex of tc=0 IS the visible corner of tile(0,0). Lines at s=0,4,8...256.
+    // BUT these are "top-vertex" lines (sc-axis), which in iso go in the OTHER diagonal direction.
+    // WAIT: isoXY(sc, sr): as sc increases with sr fixed, sx increases and sy decreases -> goes ↗
+    // As sr increases with sc fixed, sx increases and sy increases -> goes ↘  
+    // Family A (constant sc) connects points with same sc, sr varies -> goes ↘ (correct for vertical tile boundaries)
+    // For tc=0 left boundary: the line passes through isoXY(0,0), isoXY(0,4), isoXY(0,8)...
+    // These are: (0,0), (20,10), (40,20)... going ↘. This IS the right boundary of tc=0!
+    // For tc=0 left boundary we need sc = -TILE: isoXY(-4,0)=(-20,10), isoXY(-4,4)=(0,20)...
+    // So to have left boundary of tc=0 visible, we need s=-TILE.
+    // The issue: at s=-TILE, the line starts at iso (-20,10) which may render off-screen or look like tc=-1.
+    // REAL FIX: shift by TILE so s=0 maps to tc=0 LEFT boundary = s=-TILE in old coords:
+    for(let s = 0; s <= SCOLS; s += subStep){
+      const onTile=(s%TILE===0), onDeco=(s%DECO===0);
       const a = onTile ? 0.32 : onDeco ? 0.14 : 0.06;
-      // Tile-boundary lines (sc multiple of TILE) pass through TILE-diamond vertices: TILE_VW/2.
-      // All other lines (deco/sub boundaries) pass through SUB-diamond vertices: SW/2.
-      const hw = onTile ? TILE_VW/2 : SW/2;
-      const hh = onTile ? TILE_VH/2 : SH/2;
       ctx.strokeStyle=`rgba(255,255,255,${a})`;
       ctx.beginPath();
-      const p0=isoXY(sc,-TILE), pN=isoXY(sc,SROWS);
-      ctx.moveTo(p0.sx - hw, p0.sy + hh);
-      ctx.lineTo(pN.sx - hw, pN.sy + hh);
+      // Shift by -TILE: draw at (s-TILE) so s=0 gives left boundary of tc=0
+      const sc0 = s - TILE;
+      const p0 = isoXY(sc0, 0);
+      const p1 = isoXY(sc0, SROWS);
+      ctx.moveTo(p0.sx, p0.sy);
+      ctx.lineTo(p1.sx, p1.sy);
       ctx.stroke();
     }
 
-    // Family B: sr=const → top-vertex lines going ↙
-    // Extend start to sc=-TILE so lines cover the left half of tile column 0
-    for(let sr=0; sr<=SROWS; sr+=step){
-      const onTile=(sr%TILE===0), onDeco=(sr%DECO===0);
+    // Family B: row boundaries — lines go ↙, from tc=0 to tc=63 only
+    for(let s = 0; s <= SROWS; s += subStep){
+      const onTile=(s%TILE===0), onDeco=(s%DECO===0);
       const a = onTile ? 0.32 : onDeco ? 0.14 : 0.06;
       ctx.strokeStyle=`rgba(255,255,255,${a})`;
       ctx.beginPath();
-      const p0=isoXY(-TILE,sr), pN=isoXY(SCOLS,sr);
+      const p0 = isoXY(-TILE, s);
+      const p1 = isoXY(SCOLS - TILE, s);   // stop at right edge of tc=63
       ctx.moveTo(p0.sx, p0.sy);
-      ctx.lineTo(pN.sx, pN.sy);
+      ctx.lineTo(p1.sx, p1.sy);
       ctx.stroke();
     }
   }
@@ -522,8 +552,9 @@ function render(){
 //   decos: grid is SCOLS×SROWS (256×240) "dc,dr" units, step=1 sub-cell, anchor=dc,dr directly,
 //          visual size = TILE_VW×TILE_VH (= DECO_VW×DECO_VH, 2× the old size) — decos sit anywhere
 //          on the fine sub-grid, freely overlapping tile boundaries.
-const DCOLS = SCOLS + TILE;  // extra TILE to cover left overhang
-const DROWS = SROWS;
+const DECO_OFF = TILE;  // offset so dc,dr are always non-negative
+const DCOLS = SCOLS + DECO_OFF * 2;
+const DROWS = SROWS + DECO_OFF * 2;
 // Deco coordinate offset: deco(0,0) = left vertex of tile(0,0) = isoXY(-TILE, 0)
 // So render deco(dc,dr) at isoXY(dc - TILE, dr - TILE)
 // And hit-test: dc = round(ix/SW - iy/SH) + TILE
@@ -534,8 +565,8 @@ function paintAt(screenX, screenY){
     // Hit-test snaps to the sub-grid (step=1, same resolution as isoToSub),
     // independent of the deco's visual (rendered) size.
     const{ix,iy}=screenToIso(screenX,screenY);
-    const dc=Math.round(ix/SW - iy/SH);
-    const dr=Math.round(ix/SW + iy/SH);
+    const dc=Math.round(ix/SW - iy/SH)+DECO_OFF;
+    const dr=Math.round(ix/SW + iy/SH)+DECO_OFF;
     if(dc<0||dc>=DCOLS||dr<0||dr>=DROWS)return;
     if(tool==='erase'){
       // Remove any deco whose 2×2 footprint contains this sub-cell
@@ -615,7 +646,7 @@ function showGhost(dc,dr){
   if(!selectedDeco||activeLayer!=='deco'||tool==='erase')return hideGhost();
   if(dc<0||dc>=DCOLS||dr<0||dr>=DROWS)return hideGhost();
   const{ox,oy}=getOrigin();
-  const sc=dc, sr=dr;
+  const sc=dc-DECO_OFF, sr=dr-DECO_OFF;
   const{sx,sy}=isoXY(sc,sr);
   ghostCanvas.style.left=((sx-DECO_VW/2)*vpZoom+ox)+'px';
   ghostCanvas.style.top =(sy*vpZoom+oy)+'px';
@@ -1063,7 +1094,7 @@ document.getElementById('apply-img').addEventListener('click',()=>{
     // Iterate with step=DECO_SPAN so each placed deco's footprint doesn't overlap the next.
     for(let dr=0;dr<DROWS;dr+=DECO_SPAN)for(let dc=0;dc<DCOLS;dc+=DECO_SPAN){
       if(!decoAllowed(dc,dr))continue;
-      const sc=dc, sr=dr;
+      const sc=dc-DECO_OFF, sr=dr-DECO_OFF;
       const{sx,sy}=isoXY(sc,sr);
       const cx=sx+DECO_VW/2, cy=sy+DECO_VH/2; // sample at visual centre of rendered deco
       const uN=(cx-imgOvX)/imgOvW,vN=(cy-imgOvY)/imgOvH;
@@ -1148,7 +1179,7 @@ document.getElementById('export-btn').addEventListener('click',()=>{
     }
   }
   const dArr=[...gridDecos.values()].sort((a,b2)=>(a.dr+a.dc)-(b2.dr+b2.dc));
-  for(const d of dArr){const sc=d.dc,sr=d.dr;const{sx,sy}=isoXY(sc,sr);octx.drawImage(d.deco.img,sx-DECO_VW/2,sy,DECO_VW,DECO_VH);}
+  for(const d of dArr){const sc=d.dc-DECO_OFF,sr=d.dr-DECO_OFF;const{sx,sy}=isoXY(sc,sr);octx.drawImage(d.deco.img,sx-DECO_VW/2,sy,DECO_VW,DECO_VH);}
   const a=document.createElement('a'); a.download='crk-map-art.png'; a.href=oc.toDataURL('image/png'); a.click();
 });
 
