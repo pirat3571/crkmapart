@@ -64,6 +64,10 @@
   .sel-preview img{width:100%;height:100%;object-fit:contain;}
   .sel-name{font-size:12px;font-weight:700;color:var(--accent);text-align:center;word-break:break-all;}
   .sel-meta{font-size:10px;color:var(--muted);text-align:center;}
+  .postfx-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .postfx-label{font-size:10px;color:var(--muted);width:78px;flex-shrink:0;}
+  .postfx-row input[type=range]{flex:1;accent-color:var(--accent);}
+  .postfx-val{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);width:28px;text-align:right;flex-shrink:0;}
   .export-btn{background:var(--accent2);border:none;border-radius:4px;padding:5px 11px;color:#fff;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;}
   .export-btn:hover{background:var(--accent);}
   input[type="file"]{display:none;}
@@ -123,6 +127,44 @@
           <button class="tool-btn" id="img-hide-btn" style="flex:1;font-size:10px;">👁 Скрыть</button>
         </div>
       </div>
+    </div>
+
+    <div class="sidebar-section" id="img-postfx-section" style="display:none;">
+      <h3>Обработка изображения</h3>
+      <div class="postfx-row">
+        <span class="postfx-label">Яркость</span>
+        <input type="range" id="fx-brightness" min="-100" max="100" value="0">
+        <span class="postfx-val" id="fx-brightness-val">0</span>
+      </div>
+      <div class="postfx-row">
+        <span class="postfx-label">Контраст</span>
+        <input type="range" id="fx-contrast" min="-100" max="100" value="0">
+        <span class="postfx-val" id="fx-contrast-val">0</span>
+      </div>
+      <div class="postfx-row">
+        <span class="postfx-label">Насыщенность</span>
+        <input type="range" id="fx-saturation" min="-100" max="100" value="0">
+        <span class="postfx-val" id="fx-saturation-val">0</span>
+      </div>
+      <div class="postfx-row">
+        <span class="postfx-label">Резкость краёв</span>
+        <input type="range" id="fx-sharpen" min="0" max="100" value="0">
+        <span class="postfx-val" id="fx-sharpen-val">0</span>
+      </div>
+      <div class="postfx-row">
+        <span class="postfx-label">Постеризация</span>
+        <input type="range" id="fx-posterize" min="0" max="8" value="0">
+        <span class="postfx-val" id="fx-posterize-val">выкл</span>
+      </div>
+      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками">
+        <span style="font-size:11px;color:var(--muted);">Дизеринг (сглаживание)</span>
+        <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
+          <input type="checkbox" id="fx-dither" style="opacity:0;width:0;height:0;position:absolute;">
+          <span id="fx-dither-track" style="position:absolute;inset:0;background:var(--bg);border:1px solid var(--border);border-radius:17px;transition:background .2s;"></span>
+          <span id="fx-dither-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;"></span>
+        </span>
+      </label>
+      <button class="fill-all-btn" id="fx-reset-btn" style="margin-top:6px;">↺ Сбросить настройки</button>
     </div>
 
     <div class="sidebar-section">
@@ -1025,9 +1067,14 @@ document.getElementById('btn-grid').addEventListener('click',()=>{
 });
 
 // ─── APPLY IMAGE ───────────────────────────────────────────────────────────
-document.getElementById('apply-img').addEventListener('click',()=>{
-  if(!sourceImage){alert('Загрузите изображение!');return;}
-  if(!tiles.length){alert('Загрузите плитки!');return;}
+// rawTileSamples[i] = {tc,tr,r,g,b}  — original unprocessed colour at each tile centre
+// rawDecoSamples[i] = {dc,dr,r,g,b}  — original unprocessed colour at each deco anchor
+let rawTileSamples = null;
+let rawDecoSamples = null;
+let tileColorsCache = null; // [{tile,r,g,b}] computed once per apply, reused by postfx
+let decoColorsCache = null; // [{deco,r,g,b}]
+
+function sampleImageGrid(){
   const natW=sourceImage.naturalWidth,natH=sourceImage.naturalHeight;
   const oc=document.createElement('canvas');oc.width=natW;oc.height=natH;
   const octx=oc.getContext('2d');octx.imageSmoothingEnabled=true;octx.imageSmoothingQuality='high';
@@ -1038,31 +1085,19 @@ document.getElementById('apply-img').addEventListener('click',()=>{
     const cx=uN*natW,cy=vN*natH;
     const x0=Math.max(0,Math.floor(cx-rad)),x1=Math.min(natW-1,Math.ceil(cx+rad));
     const y0=Math.max(0,Math.floor(cy-rad)),y1=Math.min(natH-1,Math.ceil(cy+rad));
-    let R=0,G=0,B=0,A=0,n=0;
+    let R=0,G=0,B=0,A=0;
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
       const p=(y*natW+x)*4,a=imgData[p+3]/255;
-      R+=imgData[p]*a;G+=imgData[p+1]*a;B+=imgData[p+2]*a;A+=a;n++;
+      R+=imgData[p]*a;G+=imgData[p+1]*a;B+=imgData[p+2]*a;A+=a;
     }
-    return A>0?{r:R/A,g:G/A,b:B/A}:{r:0,g:0,b:0};
+    return A>0?{r:R/A,g:G/A,b:B/A}:null;
   }
 
   const TW_ISO=SW*TILE,TH_ISO=SH*TILE;
   const rU=(natW/imgOvW)*(TW_ISO/2),rV=(natH/imgOvH)*(TH_ISO/2);
   const radius=Math.max(.5,Math.min(rU,rV));
 
-  const activeTiles=tiles.filter(t=>!disabledTiles.has(t.name));
-  const tileColors=activeTiles.map(tile=>{
-    const tc=document.createElement('canvas');tc.width=4;tc.height=4;
-    const tctx=tc.getContext('2d');tctx.imageSmoothingEnabled=true;tctx.imageSmoothingQuality='high';
-    tctx.drawImage(tile.img,0,0,4,4);
-    const d=tctx.getImageData(0,0,4,4).data;
-    let r=0,g=0,b=0;for(let i=0;i<16;i++){r+=d[i*4];g+=d[i*4+1];b+=d[i*4+2];}
-    return{tile,r:r/16,g:g/16,b:b/16};
-  });
-
-  saveHistory();
-
-  // Pass 1: tiles
+  rawTileSamples=[];
   for(let tr=0;tr<60;tr++)for(let tc=0;tc<64;tc++){
     if(!allowedTile[tr*64+tc])continue;
     const sc=tc*TILE,sr=tr*TILE;
@@ -1070,46 +1105,226 @@ document.getElementById('apply-img').addEventListener('click',()=>{
     const cx=sx+TW_ISO/2,cy=sy+TH_ISO/2;
     const uN=(cx-imgOvX)/imgOvW,vN=(cy-imgOvY)/imgOvH;
     if(uN<0||uN>1||vN<0||vN>1)continue;
-    const{r,g,b}=sampleAvg(uN,vN,radius);
-    let best=null,bestD=Infinity;
-    for(const tc2 of tileColors){const d=(tc2.r-r)**2+(tc2.g-g)**2+(tc2.b-b)**2;if(d<bestD){bestD=d;best=tc2;}}
-    if(best)gridTiles.set(`${tc},${tr}`,best.tile);
+    const c=sampleAvg(uN,vN,radius);
+    if(c) rawTileSamples.push({tc,tr,r:c.r,g:c.g,b:c.b});
   }
 
-  // Pass 2: decos (optional)
-  const useDecos=document.getElementById('apply-decos').checked;
-  if(useDecos&&decos.length){
-    const activeDecos=decos.filter(d=>!disabledDecos.has(d.name));
-    const decoColors=activeDecos.map(deco=>{
-      const tc=document.createElement('canvas');tc.width=8;tc.height=8;
-      const tctx=tc.getContext('2d');tctx.drawImage(deco.img,0,0,8,8);
-      const d=tctx.getImageData(0,0,8,8).data;
-      let r=0,g=0,b=0,n=0;
-      for(let i=0;i<64;i++){if(d[i*4+3]>30){r+=d[i*4];g+=d[i*4+1];b+=d[i*4+2];n++;}}
-      return{deco,r:n?r/n:0,g:n?g/n:0,b:n?b/n:0};
-    });
+  rawDecoSamples=[];
+  if(decos.length){
     const radD=radius*0.5;
-    const threshold=parseInt(document.getElementById('deco-threshold').value);
-    const applyData=[];
-    // Iterate with step=DECO_SPAN so each placed deco's footprint doesn't overlap the next.
     for(let dr=0;dr<DROWS;dr+=DECO_SPAN)for(let dc=0;dc<DCOLS;dc+=DECO_SPAN){
       if(!decoAllowed(dc,dr))continue;
       const sc=dc-DECO_OFF, sr=dr-DECO_OFF;
       const{sx,sy}=isoXY(sc,sr);
-      const cx=sx+DECO_VW/2, cy=sy+DECO_VH/2; // sample at visual centre of rendered deco
+      const cx=sx+DECO_VW/2, cy=sy+DECO_VH/2;
       const uN=(cx-imgOvX)/imgOvW,vN=(cy-imgOvY)/imgOvH;
       if(uN<0||uN>1||vN<0||vN>1)continue;
-      const{r,g,b}=sampleAvg(uN,vN,radD);
-      let best=null,bestD=Infinity;
-      for(const dcol of decoColors){const d=(dcol.r-r)**2+(dcol.g-g)**2+(dcol.b-b)**2;if(d<bestD){bestD=d;best=dcol;}}
-      applyData.push({dc,dr,r,g,b,best,bestD});
-      if(best&&bestD<threshold) gridDecos.set(`${dc},${dr}`,{deco:best.deco,dc,dr});
+      const c=sampleAvg(uN,vN,radD);
+      if(c) rawDecoSamples.push({dc,dr,r:c.r,g:c.g,b:c.b});
     }
-    lastDecoApplyData=applyData;
+  }
+}
+
+function buildColorCaches(){
+  const activeTiles=tiles.filter(t=>!disabledTiles.has(t.name));
+  tileColorsCache=activeTiles.map(tile=>{
+    const tc=document.createElement('canvas');tc.width=4;tc.height=4;
+    const tctx=tc.getContext('2d');tctx.imageSmoothingEnabled=true;tctx.imageSmoothingQuality='high';
+    tctx.drawImage(tile.img,0,0,4,4);
+    const d=tctx.getImageData(0,0,4,4).data;
+    let r=0,g=0,b=0;for(let i=0;i<16;i++){r+=d[i*4];g+=d[i*4+1];b+=d[i*4+2];}
+    return{tile,r:r/16,g:g/16,b:b/16};
+  });
+  const activeDecos=decos.filter(d=>!disabledDecos.has(d.name));
+  decoColorsCache=activeDecos.map(deco=>{
+    const tc=document.createElement('canvas');tc.width=8;tc.height=8;
+    const tctx=tc.getContext('2d');tctx.drawImage(deco.img,0,0,8,8);
+    const d=tctx.getImageData(0,0,8,8).data;
+    let r=0,g=0,b=0,n=0;
+    for(let i=0;i<64;i++){if(d[i*4+3]>30){r+=d[i*4];g+=d[i*4+1];b+=d[i*4+2];n++;}}
+    return{deco,r:n?r/n:0,g:n?g/n:0,b:n?b/n:0};
+  });
+}
+
+// ─── POST-PROCESSING (applied to raw samples before tile/deco matching) ────
+function clamp255(v){ return Math.max(0,Math.min(255,v)); }
+
+function applyPostFX(r,g,b){
+  const brightness=parseInt(document.getElementById('fx-brightness').value);
+  const contrast=parseInt(document.getElementById('fx-contrast').value);
+  const saturation=parseInt(document.getElementById('fx-saturation').value);
+  const posterize=parseInt(document.getElementById('fx-posterize').value);
+
+  // Brightness
+  r+=brightness; g+=brightness; b+=brightness;
+
+  // Contrast (factor around midpoint 128)
+  const cf=(259*(contrast+255))/(255*(259-contrast));
+  r=cf*(r-128)+128; g=cf*(g-128)+128; b=cf*(b-128)+128;
+
+  // Saturation (lerp toward greyscale luma)
+  const luma=0.299*r+0.587*g+0.114*b;
+  const sf=1+saturation/100;
+  r=luma+(r-luma)*sf; g=luma+(g-luma)*sf; b=luma+(b-luma)*sf;
+
+  r=clamp255(r); g=clamp255(g); b=clamp255(b);
+
+  // Posterize (reduce levels per channel)
+  if(posterize>0){
+    const levels=9-posterize; // posterize=1 -> 8 levels, posterize=8 -> 1 level
+    const step=255/(levels-1||1);
+    r=Math.round(Math.round(r/step)*step);
+    g=Math.round(Math.round(g/step)*step);
+    b=Math.round(Math.round(b/step)*step);
   }
 
-  imgOvVisible=false;document.getElementById('img-overlay-controls').style.display='none';
-  render();updateCounts();
+  return {r:clamp255(r),g:clamp255(g),b:clamp255(b)};
+}
+
+// Note: dithering (Floyd–Steinberg error diffusion) is implemented inline
+// inside reapplyImage() since it needs the tile-grid raster order directly.
+
+function matchColor(r,g,b,colorCache){
+  let best=null,bestD=Infinity;
+  for(const c of colorCache){
+    const d=(c.r-r)**2+(c.g-g)**2+(c.b-b)**2;
+    if(d<bestD){bestD=d;best=c;}
+  }
+  return {best,bestD};
+}
+
+// ─── REAPPLY (runs on every slider change, no re-sampling of the image) ────
+function reapplyImage(){
+  if(!rawTileSamples||!tileColorsCache) return;
+
+  const dither=document.getElementById('fx-dither').checked;
+
+  // Tiles
+  const sharpenAmt=parseInt(document.getElementById('fx-sharpen').value);
+  let tileSrc=rawTileSamples;
+  if(sharpenAmt>0){
+    const byPos=new Map();
+    for(const s of rawTileSamples) byPos.set(`${s.tc},${s.tr}`, s);
+    const k=sharpenAmt/100;
+    tileSrc=rawTileSamples.map(s=>{
+      const neigh=[[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dy])=>byPos.get(`${s.tc+dx},${s.tr+dy}`)).filter(Boolean);
+      if(!neigh.length) return s;
+      const avgR=neigh.reduce((a,n)=>a+n.r,0)/neigh.length;
+      const avgG=neigh.reduce((a,n)=>a+n.g,0)/neigh.length;
+      const avgB=neigh.reduce((a,n)=>a+n.b,0)/neigh.length;
+      return {
+        tc:s.tc, tr:s.tr,
+        r: s.r + (s.r-avgR)*k,
+        g: s.g + (s.g-avgG)*k,
+        b: s.b + (s.b-avgB)*k,
+      };
+    });
+  }
+
+  if(!dither){
+    for(const s of tileSrc){
+      const c=applyPostFX(s.r,s.g,s.b);
+      const{best}=matchColor(c.r,c.g,c.b,tileColorsCache);
+      if(best) gridTiles.set(`${s.tc},${s.tr}`,best.tile);
+    }
+  } else {
+    // Floyd–Steinberg error diffusion across the tile raster (row-major by tc,tr)
+    const byPos=new Map();
+    for(const s of tileSrc) byPos.set(`${s.tc},${s.tr}`, {...s});
+    const errR={},errG={},errB={};
+    for(let tr=0;tr<60;tr++){
+      for(let tc=0;tc<64;tc++){
+        const key=`${tc},${tr}`;
+        const s=byPos.get(key); if(!s) continue;
+        const ek=key;
+        let r=s.r+(errR[ek]||0), g=s.g+(errG[ek]||0), b=s.b+(errB[ek]||0);
+        const c=applyPostFX(r,g,b);
+        const{best}=matchColor(c.r,c.g,c.b,tileColorsCache);
+        if(!best) continue;
+        gridTiles.set(key,best.tile);
+        const er=c.r-best.r, eg=c.g-best.g, eb=c.b-best.b;
+        const push=(dtc,dtr,frac)=>{
+          const k2=`${tc+dtc},${tr+dtr}`;
+          errR[k2]=(errR[k2]||0)+er*frac;
+          errG[k2]=(errG[k2]||0)+eg*frac;
+          errB[k2]=(errB[k2]||0)+eb*frac;
+        };
+        push(1,0,7/16); push(-1,1,3/16); push(0,1,5/16); push(1,1,1/16);
+      }
+    }
+  }
+
+  // Decos
+  const useDecos=document.getElementById('apply-decos').checked;
+  const threshold=parseInt(document.getElementById('deco-threshold').value);
+  if(useDecos && rawDecoSamples && decoColorsCache && decoColorsCache.length){
+    gridDecos.clear();
+    const applyData=[];
+    for(const s of rawDecoSamples){
+      const c=applyPostFX(s.r,s.g,s.b);
+      const{best,bestD}=matchColor(c.r,c.g,c.b,decoColorsCache);
+      applyData.push({dc:s.dc,dr:s.dr,r:c.r,g:c.g,b:c.b,best,bestD});
+      if(best&&bestD<threshold) gridDecos.set(`${s.dc},${s.dr}`,{deco:best.deco,dc:s.dc,dr:s.dr});
+    }
+    lastDecoApplyData=applyData;
+  } else if(!useDecos){
+    gridDecos.clear();
+  }
+
+  render(); updateCounts();
+}
+
+document.getElementById('apply-img').addEventListener('click',()=>{
+  if(!sourceImage){alert('Загрузите изображение!');return;}
+  if(!tiles.length){alert('Загрузите плитки!');return;}
+
+  saveHistory();
+  sampleImageGrid();
+  buildColorCaches();
+  reapplyImage();
+
+  imgOvVisible=false;
+  document.getElementById('img-overlay-controls').style.display='none';
+  document.getElementById('img-postfx-section').style.display='block';
+});
+
+// Wire up all postfx controls to live-update via reapplyImage()
+const fxIds=['fx-brightness','fx-contrast','fx-saturation','fx-sharpen'];
+for(const id of fxIds){
+  const el=document.getElementById(id);
+  const valEl=document.getElementById(id+'-val');
+  el.addEventListener('input',()=>{
+    valEl.textContent=el.value;
+    reapplyImage();
+  });
+}
+const fxPosterize=document.getElementById('fx-posterize');
+const fxPosterizeVal=document.getElementById('fx-posterize-val');
+fxPosterize.addEventListener('input',()=>{
+  fxPosterizeVal.textContent = fxPosterize.value==='0' ? 'выкл' : fxPosterize.value;
+  reapplyImage();
+});
+
+const fxDitherChk=document.getElementById('fx-dither');
+const fxDitherTrack=document.getElementById('fx-dither-track');
+const fxDitherThumb=document.getElementById('fx-dither-thumb');
+function syncDitherToggle(){
+  const on=fxDitherChk.checked;
+  fxDitherTrack.style.background= on ? 'var(--accent)' : 'var(--bg)';
+  fxDitherTrack.style.border = on ? 'none' : '1px solid var(--border)';
+  fxDitherThumb.style.left = on ? '17px' : '2px';
+}
+fxDitherChk.addEventListener('change',()=>{ syncDitherToggle(); reapplyImage(); });
+syncDitherToggle();
+
+document.getElementById('fx-reset-btn').addEventListener('click',()=>{
+  document.getElementById('fx-brightness').value=0; document.getElementById('fx-brightness-val').textContent='0';
+  document.getElementById('fx-contrast').value=0; document.getElementById('fx-contrast-val').textContent='0';
+  document.getElementById('fx-saturation').value=0; document.getElementById('fx-saturation-val').textContent='0';
+  document.getElementById('fx-sharpen').value=0; document.getElementById('fx-sharpen-val').textContent='0';
+  document.getElementById('fx-posterize').value=0; fxPosterizeVal.textContent='выкл';
+  fxDitherChk.checked=false; syncDitherToggle();
+  reapplyImage();
 });
 
 // ─── COUNTS ────────────────────────────────────────────────────────────────
