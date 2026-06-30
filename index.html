@@ -168,6 +168,39 @@
     </div>
 
     <div class="sidebar-section">
+      <h3>Инструменты</h3>
+      <div class="toolbar">
+        <button class="tool-btn active" id="tool-draw">✏ Рисовать</button>
+        <button class="tool-btn" id="tool-erase">✕ Ластик</button>
+        <button class="tool-btn" id="tool-fill">🪣 Заливка</button>
+      </div>
+      <button class="fill-all-btn" id="apply-img">🎨 Применить изображение</button>
+      <button class="fill-all-btn" id="clear-btn" style="margin-top:3px;border-color:#7a2020;color:#e87d7d;">🗑 Очистить карту</button>
+      <!-- Threshold slider -->
+      <div style="margin-top:8px;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:10px;color:var(--muted);">Порог цвета для декораций</span>
+          <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="deco-threshold-val">1500</span>
+        </div>
+        <input type="range" id="deco-threshold" min="0" max="5000" value="1500" style="width:100%;accent-color:var(--accent);">
+        <div style="display:flex;justify-content:space-between;margin-top:2px;">
+          <span style="font-size:9px;color:var(--muted);">меньше</span>
+          <span style="font-size:9px;color:var(--muted);">больше</span>
+        </div>
+      </div>
+      <!-- Toggle: use decos on image apply -->
+      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Применять декорации при импорте изображения">
+        <span style="font-size:11px;color:var(--muted);">Декорации при импорте</span>
+        <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
+          <input type="checkbox" id="apply-decos" checked style="opacity:0;width:0;height:0;position:absolute;">
+          <span id="apply-decos-track" style="position:absolute;inset:0;background:var(--accent);border-radius:17px;transition:background .2s;"></span>
+          <span id="apply-decos-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;left:17px;"></span>
+        </span>
+      </label>
+      <button class="fill-all-btn" id="clear-decos-btn" style="margin-top:8px;border-color:#7a2020;color:#e87d7d;">🚫 Убрать все декорации</button>
+    </div>
+
+    <div class="sidebar-section" style="flex:1;">
       <h3>Палитра</h3>
       <div class="tab-bar">
         <button class="tab-btn active" id="tab-tiles">🧱 Плитки</button>
@@ -191,48 +224,8 @@
         <input type="file" id="decos-upload" accept=".png,image/png" multiple>
         <div id="decos-loading">⏳ Загрузка декораций…</div>
         <div style="font-size:9px;color:var(--muted);margin-top:4px;">ПКМ — откл/вкл</div>
-        <button class="fill-all-btn" id="clear-decos-btn" style="margin-top:5px;border-color:#7a2020;color:#e87d7d;">🚫 Убрать все декорации</button>
-        <!-- Threshold slider -->
-        <div style="margin-top:8px;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-            <span style="font-size:10px;color:var(--muted);">Порог цвета для декораций</span>
-            <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="deco-threshold-val">1500</span>
-          </div>
-          <input type="range" id="deco-threshold" min="0" max="5000" value="1500" style="width:100%;accent-color:var(--accent);">
-          <div style="display:flex;justify-content:space-between;margin-top:2px;">
-            <span style="font-size:9px;color:var(--muted);">меньше</span>
-            <span style="font-size:9px;color:var(--muted);">больше</span>
-          </div>
-        </div>
-        <!-- Toggle: use decos on image apply -->
-        <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Применять декорации при импорте изображения">
-          <span style="font-size:11px;color:var(--muted);">Декорации при импорте</span>
-          <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
-            <input type="checkbox" id="apply-decos" checked style="opacity:0;width:0;height:0;position:absolute;">
-            <span id="apply-decos-track" style="position:absolute;inset:0;background:var(--accent);border-radius:17px;transition:background .2s;"></span>
-            <span id="apply-decos-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;left:17px;"></span>
-          </span>
-        </label>
         <div id="deco-grid" class="deco-grid"></div>
       </div>
-    </div>
-
-    <div class="sidebar-section">
-      <h3>Инструменты</h3>
-      <div class="toolbar">
-        <button class="tool-btn active" id="tool-draw">✏ Рисовать</button>
-        <button class="tool-btn" id="tool-erase">✕ Ластик</button>
-        <button class="tool-btn" id="tool-fill">🪣 Заливка</button>
-      </div>
-      <button class="fill-all-btn" id="apply-img">🎨 Применить изображение</button>
-      <button class="fill-all-btn" id="clear-btn" style="margin-top:3px;border-color:#7a2020;color:#e87d7d;">🗑 Очистить карту</button>
-    </div>
-
-    <div class="sidebar-section" style="flex:1;">
-      <h3>Расход</h3>
-      <ul class="counts-list" id="counts-list">
-        <li style="color:var(--muted);font-size:10px;padding:5px 0;">Нарисуйте карту</li>
-      </ul>
     </div>
   </div>
 
@@ -243,15 +236,17 @@
   </div>
 
   <div class="right-panel">
+    <div style="padding:9px 12px;border-bottom:1px solid var(--border);flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+      <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Расход</div>
+      <ul class="counts-list" id="counts-list">
+        <li style="color:var(--muted);font-size:10px;padding:5px 0;">Нарисуйте карту</li>
+      </ul>
+    </div>
     <h3>Выбрано</h3>
     <div class="sel-info">
       <div class="sel-preview" id="selected-preview"><span>Не выбрано</span></div>
       <div class="sel-name" id="selected-name">—</div>
       <div class="sel-meta" id="selected-meta"></div>
-    </div>
-    <div style="padding:9px 12px;border-top:1px solid var(--border);margin-top:auto;">
-      <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Нажатая ячейка</div>
-      <div id="clicked-info" style="font-size:11px;color:var(--muted);">Нажмите на карту</div>
     </div>
   </div>
 </div>
@@ -830,19 +825,6 @@ document.addEventListener('mouseup',()=>{
   canvasArea.style.cursor='crosshair';
 });
 canvasArea.addEventListener('mouseleave',()=>{document.getElementById('tooltip').style.opacity='0';hideGhost();});
-
-canvasArea.addEventListener('click',e=>{
-  if(isPanning||isDraggingImg||resizingHandle!==-1)return;
-  const rect=canvasArea.getBoundingClientRect();
-  const{ix,iy}=screenToIso(e.clientX-rect.left,e.clientY-rect.top);
-  const _iyc=iy-TILE_VH/2;
-  const tc=Math.round(ix/TILE_VW - _iyc/TILE_VH);
-  const tr=Math.round(ix/TILE_VW + _iyc/TILE_VH);
-  const t=gridTiles.get(`${tc},${tr}`);
-  const info=document.getElementById('clicked-info');
-  info.textContent=t?`${t.name}\ntile(${tc},${tr})`:`пусто tile(${tc},${tr})`;
-  info.style.color=t?'var(--accent)':'var(--muted)';info.style.whiteSpace='pre';
-});
 
 // ─── TABS ──────────────────────────────────────────────────────────────────
 document.getElementById('tab-tiles').addEventListener('click',()=>{
