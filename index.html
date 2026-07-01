@@ -35,7 +35,7 @@
   .tile-item img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;}
   .tile-item .tile-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);font-size:7px;text-align:center;padding:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s;}
   .tile-item:hover .tile-name{opacity:1;}
-  .counts-list{list-style:none;margin-top:4px;max-height:160px;overflow-y:auto;}
+  .counts-list{list-style:none;margin-top:4px;overflow-y:auto;}
   .counts-list li{display:flex;align-items:center;gap:5px;padding:3px 0;font-size:11px;border-bottom:1px solid var(--border);}
   .counts-list li:last-child{border:none;}
   .counts-list .tile-thumb{width:18px;height:18px;border-radius:2px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
@@ -236,8 +236,8 @@
   </div>
 
   <div class="right-panel">
-    <div style="padding:9px 12px;border-bottom:1px solid var(--border);flex:1;overflow-y:auto;display:flex;flex-direction:column;">
-      <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Расход</div>
+    <h3>Расход</h3>
+    <div style="padding:4px 12px 9px;flex:1;display:flex;flex-direction:column;min-height:0;">
       <ul class="counts-list" id="counts-list">
         <li style="color:var(--muted);font-size:10px;padding:5px 0;">Нарисуйте карту</li>
       </ul>
@@ -1323,15 +1323,26 @@ function updateCounts(){
   document.getElementById('total-tiles').textContent=totalT;
   document.getElementById('total-decos').textContent=gridDecos.size;
   document.getElementById('free-count').textContent=free;
-  const list=document.getElementById('counts-list');list.innerHTML='';
-  const all=[...Object.entries(tileCounts).map(([n,c])=>({n,c,isDeco:false})),...Object.entries(decoCounts).map(([n,c])=>({n,c,isDeco:true}))].sort((a,b)=>b.c-a.c);
-  if(!all.length){list.innerHTML='<li style="color:var(--muted);font-size:10px;padding:5px 0;">Пусто</li>';return;}
-  for(const{n,c,isDeco}of all){
+  const tileArr=Object.entries(tileCounts).map(([n,c])=>({n,c,isDeco:false})).sort((a,b)=>b.c-a.c);
+  const decoArr=Object.entries(decoCounts).map(([n,c])=>({n,c,isDeco:true})).sort((a,b)=>b.c-a.c);
+  const list=document.getElementById('counts-list');
+  list.innerHTML='';
+  if(!tileArr.length&&!decoArr.length){list.innerHTML='<li style="color:var(--muted);font-size:10px;padding:5px 0;">Пусто</li>';return;}
+  const addGroup=(label,arr)=>{
+  if(!arr.length)return;
+  const h=document.createElement('li');
+  h.style.cssText='font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 0 3px;font-weight:600;border:none;';
+  h.textContent=label;
+  list.appendChild(h);
+  for(const{n,c,isDeco}of arr){
     const item=isDeco?decos.find(d=>d.name===n):tiles.find(t=>t.name===n);
     const li=document.createElement('li');
-    li.innerHTML=`<div class="tile-thumb">${item?`<img src="${item.src}">`:''}</div><span class="name">${n}</span><span class="badge ${isDeco?'deco':'tile'}">${isDeco?'2×2':'4×4'}</span><span class="count">${c}</span>`;
+    li.innerHTML=`<div class="tile-thumb">${item?`<img src="${item.src}">`:''}</div><span class="name">${n}</span><span class="badge ${isDeco?'deco':'tile'}">${isDeco?'deco':'tile'}</span><span class="count">${c}</span>`;
     list.appendChild(li);
   }
+};
+  addGroup('Плитки',tileArr);
+  addGroup('Декорации',decoArr);
   if(selectedTile)document.getElementById('selected-meta').textContent=`Исп: ${tileCounts[selectedTile.name]||0}`;
   if(selectedDeco)document.getElementById('selected-meta').textContent=`Исп: ${decoCounts[selectedDeco.name]||0}`;
 }
