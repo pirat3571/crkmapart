@@ -41,9 +41,6 @@
   .counts-list .tile-thumb{width:18px;height:18px;border-radius:2px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
   .counts-list .tile-thumb img{width:100%;height:100%;object-fit:contain;}
   .counts-list .name{flex:1;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .counts-list .badge{font-size:9px;padding:1px 4px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-weight:500;}
-  .counts-list .badge.tile{background:rgba(244,168,58,.15);color:var(--accent);}
-  .counts-list .badge.deco{background:rgba(100,180,255,.15);color:#6ab4ff;}
   .counts-list .count{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--accent);font-size:11px;}
   .canvas-area{flex:1;overflow:hidden;position:relative;background:radial-gradient(ellipse at 30% 40%,rgba(244,168,58,.04) 0%,transparent 60%),var(--bg);}
   #map-canvas{position:absolute;top:0;left:0;cursor:crosshair;}
@@ -1337,7 +1334,7 @@ function updateCounts(){
   for(const{n,c,isDeco}of arr){
     const item=isDeco?decos.find(d=>d.name===n):tiles.find(t=>t.name===n);
     const li=document.createElement('li');
-    li.innerHTML=`<div class="tile-thumb">${item?`<img src="${item.src}">`:''}</div><span class="name">${n}</span><span class="badge ${isDeco?'deco':'tile'}">${isDeco?'deco':'tile'}</span><span class="count">${c}</span>`;
+    li.innerHTML=`<div class="tile-thumb">${item?`<img src="${item.src}">`:''}</div><span class="name">${n}</span><span class="count">${c}</span>`;
     list.appendChild(li);
   }
 };
