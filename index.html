@@ -426,10 +426,17 @@ function screenToSub(sx,sy){
 }
 // Deco-unit hit-test — same sub-grid resolution as isoToSub (step=1 sub-cell).
 // Returns {dc,dr} in sub-grid units (DCOLS×DROWS = 256×240).
+// NOTE: uses the exact same (unshifted) formula as isoToSub/tiles so that the
+// deco grid lines up 1:1 with the tile grid at every edge of the map. The old
+// code added an asymmetric "+DECO_SPAN/2 to dc / -DECO_SPAN/2 to dr" offset,
+// which is equivalent to shifting the whole deco grid one sub-unit *upward*
+// (pure vertical shift, since (+1,-1) cancels out on the X axis but doubles
+// up on the Y axis). That shift is what caused the top edge of the map to
+// lose 2 placeable sub-rows and the bottom edge to gain 2 bogus ones.
 function screenToDecoUnit(sx,sy){
   const{ix,iy}=screenToIso(sx,sy);
-  const dc=Math.round(ix/SW - iy/SH + DECO_SPAN/2)+DECO_OFF_L;
-  const dr=Math.round(ix/SW + iy/SH - DECO_SPAN/2)+DECO_OFF_T;
+  const dc=Math.round(ix/SW - iy/SH)+DECO_OFF_L;
+  const dr=Math.round(ix/SW + iy/SH)+DECO_OFF_T;
   return {dc,dr};
 }
 // Snap sub-cell to tile grid (multiples of TILE)
@@ -601,9 +608,10 @@ const DROWS = SROWS + DECO_OFF_T + DECO_OFF_B;
 
 function paintAt(screenX, screenY){
   if(activeLayer==='deco'){
-  const{ix,iy}=screenToIso(screenX,screenY);
-  const dc=Math.round(ix/SW - iy/SH + DECO_SPAN/2)+DECO_OFF_L;
-  const dr=Math.round(ix/SW + iy/SH - DECO_SPAN/2)+DECO_OFF_T;
+  // Use the SAME (unshifted) conversion as screenToDecoUnit — see the comment
+  // there for why the old asymmetric offset broke placement at the top/bottom
+  // edges of the map.
+  const{dc,dr}=screenToDecoUnit(screenX,screenY);
   if(dc<0||dc+DECO_SPAN>DCOLS||dr<0||dr+DECO_SPAN>DROWS)return;
   if(tool==='erase'){
     for(const[k,d]of gridDecos){
