@@ -22,6 +22,8 @@
   .upload-btn .hint{font-size:10px;color:var(--muted);margin-top:1px;display:block;}
   .source-preview{margin-top:7px;width:100%;border-radius:4px;overflow:hidden;display:none;border:1px solid var(--border);}
   .source-preview img{width:100%;display:block;}
+  .source-preview{position:relative;}
+  #source-fx-canvas{border-radius:4px;}
   .tab-bar{display:flex;gap:2px;margin-bottom:7px;}
   .tab-btn{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;letter-spacing:.5px;text-transform:uppercase;}
   .tab-btn.active{border-color:var(--accent);background:rgba(244,168,58,.12);color:var(--accent);}
@@ -112,7 +114,10 @@
         <div>Загрузить изображение<span class="hint">PNG / JPG / WEBP</span></div>
       </label>
       <input type="file" id="img-upload" accept="image/*">
-      <div class="source-preview" id="source-preview"><img id="source-img" src="" alt=""></div>
+      <div class="source-preview" id="source-preview">
+        <canvas id="source-fx-canvas" style="width:100%;display:block;"></canvas>
+        <img id="source-img" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s ease;">
+      </div>
       <div id="img-overlay-controls" style="display:none;margin-top:7px;">
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Позиционирование</div>
         <div style="font-size:10px;color:var(--muted);line-height:1.7;margin-bottom:5px;">🖱 Тащи · Углы — масштаб</div>
@@ -371,6 +376,7 @@ let selectedTile=null, selectedDeco=null;
 let activeLayer='tile';
 let tool='draw';
 let sourceImage=null;
+let sourceFxAlwaysOriginal=false;
 
 // Undo/redo
 let undoStack=[], redoStack=[];
@@ -1000,6 +1006,8 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       const b=isoBounds(),asp=img.naturalWidth/img.naturalHeight;
       imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
       imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';render();
+      sourceFxAlwaysOriginal=false;
+      updateSourcePreview();
     };img.src=ev.target.result;
   };reader.readAsDataURL(file);
 });
@@ -1046,6 +1054,16 @@ function syncDecoToggle(){
 }
 applyDecosChk.addEventListener('change', syncDecoToggle);
 syncDecoToggle();
+const srcPreview=document.getElementById('source-preview');
+const srcOrigImg=document.getElementById('source-img');
+srcPreview.addEventListener('mouseenter',()=>{if(!sourceFxAlwaysOriginal)srcOrigImg.style.opacity='1';});
+srcPreview.addEventListener('mouseleave',()=>{if(!sourceFxAlwaysOriginal)srcOrigImg.style.opacity='0';});
+srcPreview.addEventListener('click',()=>{
+  sourceFxAlwaysOriginal=!sourceFxAlwaysOriginal;
+  srcPreview.style.cursor=sourceFxAlwaysOriginal?'pointer':'default';
+  updateSourcePreview();
+});
+srcPreview.style.cursor='default';
 const GRID_LABELS=['⊟ Выкл','⊞ 2×2','⊞ 1×1'];
 document.getElementById('btn-grid').addEventListener('click',()=>{
   gridMode=(gridMode+1)%3;document.getElementById('btn-grid').textContent=GRID_LABELS[gridMode];render();
@@ -1256,7 +1274,71 @@ function reapplyImage(){
     gridDecos.clear();
   }
 
-  render(); updateCounts();
+  render(); updateCounts(); updateSourcePreview();
+}
+
+function updateSourcePreview(){
+  if(!sourceImage)return;
+  const canvas=document.getElementById('source-fx-canvas');
+  const ctx=canvas.getContext('2d');
+  const natW=sourceImage.naturalWidth,natH=sourceImage.naturalHeight;
+  canvas.width=natW;canvas.height=natH;
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(sourceImage,0,0,natW,natH);
+
+  if(sourceFxAlwaysOriginal){
+    document.getElementById('source-img').style.opacity='1';
+    return;
+  }
+
+  const brightness=parseInt(document.getElementById('fx-brightness').value);
+  const contrast=parseInt(document.getElementById('fx-contrast').value);
+  const saturation=parseInt(document.getElementById('fx-saturation').value);
+  const posterize=parseInt(document.getElementById('fx-posterize').value);
+  const dither=document.getElementById('fx-dither').checked;
+
+  if(brightness===0&&contrast===0&&saturation===0&&posterize===0&&!dither){
+    document.getElementById('source-img').style.opacity='1';
+    return;
+  }
+
+  const imgData=ctx.getImageData(0,0,natW,natH);
+  const d=imgData.data;
+
+  // Применяем постпроцессинг попиксельно
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i],g=d[i+1],b=d[i+2];
+    const fx=applyPostFX(r,g,b);
+    d[i]=fx.r;d[i+1]=fx.g;d[i+2]=fx.b;
+  }
+
+  // Дизеринг (Floyd–Steinberg)
+  if(dither){
+    const w=natW,h=natH;
+    const errR=new Float32Array(w*h),errG=new Float32Array(w*h),errB=new Float32Array(w*h);
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w;x++){
+        const idx=(y*w+x)*4;
+        let r=d[idx]+errR[y*w+x],g=d[idx+1]+errG[y*w+x],b=d[idx+2]+errB[y*w+x];
+        const nr=Math.round(Math.max(0,Math.min(255,r)));
+        const ng=Math.round(Math.max(0,Math.min(255,g)));
+        const nb=Math.round(Math.max(0,Math.min(255,b)));
+        d[idx]=nr;d[idx+1]=ng;d[idx+2]=nb;
+        const er=r-nr,eg=g-ng,eb=b-nb;
+        const push=(dx,dy,frac)=>{
+          const nx=x+dx,ny=y+dy;
+          if(nx>=0&&nx<w&&ny>=0&&ny<h){
+            const ni=ny*w+nx;
+            errR[ni]+=er*frac;errG[ni]+=eg*frac;errB[ni]+=eb*frac;
+          }
+        };
+        push(1,0,7/16);push(-1,1,3/16);push(0,1,5/16);push(1,1,1/16);
+      }
+    }
+  }
+
+  ctx.putImageData(imgData,0,0);
+  document.getElementById('source-img').style.opacity='0';
 }
 
 document.getElementById('apply-img').addEventListener('click',()=>{
