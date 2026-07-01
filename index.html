@@ -115,9 +115,10 @@
       </label>
       <input type="file" id="img-upload" accept="image/*">
       <div class="source-preview" id="source-preview">
-        <canvas id="source-fx-canvas" style="width:100%;display:block;"></canvas>
-        <img id="source-img" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s ease;">
-      </div>
+  <canvas id="source-fx-canvas" style="width:100%;display:block;"></canvas>
+  <img id="source-img" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s ease;">
+</div>
+<div id="src-fx-hint" style="display:none;font-size:9px;color:var(--muted);margin-top:3px;line-height:1.4;">💡 Лагает? Кликни на превью чтобы отключить обработку</div>
       <div id="img-overlay-controls" style="display:none;margin-top:7px;">
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Позиционирование</div>
         <div style="font-size:10px;color:var(--muted);line-height:1.7;margin-bottom:5px;">🖱 Тащи · Углы — масштаб</div>
@@ -1008,6 +1009,7 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';render();
       sourceFxAlwaysOriginal=false;
       updateSourcePreview();
+      document.getElementById('src-fx-hint').style.display='block';
     };img.src=ev.target.result;
   };reader.readAsDataURL(file);
 });
@@ -1021,6 +1023,7 @@ document.getElementById('img-fit-btn').addEventListener('click',()=>{
 });
 document.getElementById('img-hide-btn').addEventListener('click',()=>{
   imgOvVisible=!imgOvVisible;document.getElementById('img-hide-btn').textContent=imgOvVisible?'👁 Скрыть':'👁 Показать';render();
+  document.getElementById('src-fx-hint').style.display=imgOvVisible?'block':'none';
 });
 
 // ─── TOOLS ─────────────────────────────────────────────────────────────────
