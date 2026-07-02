@@ -15,7 +15,7 @@
   .main{display:flex;flex:1;overflow:hidden;}
   .sidebar{width:270px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;z-index:5;}
   .sidebar-section{padding:10px 12px;border-bottom:1px solid var(--border);}
-  .sidebar-section h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:600;}
+  .sidebar-section h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:700;}
   .upload-btn{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px dashed var(--border);border-radius:5px;padding:7px 9px;cursor:pointer;width:100%;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;transition:border-color .2s,background .2s;text-align:left;}
   .upload-btn:hover{border-color:var(--accent);background:rgba(244,168,58,.06);}
   .upload-btn .icon{font-size:15px;color:var(--accent);flex-shrink:0;}
@@ -25,7 +25,7 @@
   .source-preview{position:relative;}
   #source-fx-canvas{border-radius:4px;}
   .tab-bar{display:flex;gap:2px;margin-bottom:7px;}
-  .tab-btn{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;letter-spacing:.5px;text-transform:uppercase;}
+  .tab-btn{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;letter-spacing:.5px;text-transform:uppercase;}
   .tab-btn.active{border-color:var(--accent);background:rgba(244,168,58,.12);color:var(--accent);}
   .tab-panel{display:none;}.tab-panel.active{display:block;}
   .palette-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:5px;}
@@ -38,7 +38,7 @@
   .tile-item img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;}
   .tile-item .tile-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);font-size:7px;text-align:center;padding:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s;}
   .tile-item:hover .tile-name{opacity:1;}
-  .counts-list{list-style:none;margin-top:4px;overflow-y:auto;}
+  .counts-list{list-style:none;margin-top:4px;overflow-y:auto;font-weight: 700;}
   .counts-list li{display:flex;align-items:center;gap:5px;padding:3px 0;font-size:11px;border-bottom:1px solid var(--border);}
   .counts-list li:last-child{border:none;}
   .counts-list .tile-thumb{width:18px;height:18px;border-radius:2px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
@@ -47,19 +47,19 @@
   .counts-list .count{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--accent);font-size:11px;}
   .canvas-area{flex:1;overflow:hidden;position:relative;background:radial-gradient(ellipse at 30% 40%,rgba(244,168,58,.04) 0%,transparent 60%),var(--bg);}
   #map-canvas{position:absolute;top:0;left:0;cursor:crosshair;}
-  .tooltip{position:fixed;background:var(--bg2);border:1px solid var(--accent);border-radius:5px;padding:4px 9px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .1s;z-index:100;white-space:nowrap;color:var(--accent);font-weight:600;}
+  .tooltip{position:fixed;background:var(--bg2);border:1px solid var(--accent);border-radius:5px;padding:4px 9px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .1s;z-index:100;white-space:nowrap;color:var(--accent);font-weight:700;}
   .toolbar{display:flex;gap:5px;flex-wrap:wrap;}
-  .tool-btn{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;}
+  .tool-btn{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:border-color .15s,background .15s;}
   .tool-btn:hover{border-color:var(--accent);background:rgba(244,168,58,.08);}
   .tool-btn.active{border-color:var(--accent);background:rgba(244,168,58,.15);color:var(--accent);}
   .tool-btn:disabled{opacity:.35;cursor:not-allowed;}
-  .fill-all-btn{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 9px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:border-color .15s;width:100%;margin-top:5px;}
+  .fill-all-btn{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 9px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:border-color .15s;width:100%;margin-top:5px;}
   .fill-all-btn:hover{border-color:var(--accent);}
   .status-bar{background:var(--bg2);border-top:1px solid var(--border);padding:4px 14px;display:flex;gap:14px;align-items:center;font-size:10px;color:var(--muted);flex-shrink:0;font-family:'JetBrains Mono',monospace;z-index:10;}
   .status-bar span{color:var(--text);}
   .status-cell-fixed{min-width:140px;flex-shrink:0;}
   .right-panel{width:180px;background:var(--bg2);border-left:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;z-index:5;}
-  .right-panel h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:10px 12px 5px;border-bottom:1px solid var(--border);font-weight:600;}
+  .right-panel h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:10px 12px 5px;border-bottom:1px solid var(--border);font-weight:700;}
   .sel-info{padding:9px 12px;display:flex;flex-direction:column;gap:7px;}
   .sel-preview{width:100%;aspect-ratio:1;border-radius:5px;overflow:hidden;border:1px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;}
   .sel-preview img{width:100%;height:100%;object-fit:contain;}
@@ -79,7 +79,7 @@
   #hint-close:hover{border-color:var(--accent);color:var(--accent);}
   #tiles-loading,#decos-loading{display:none;font-size:10px;color:var(--muted);padding:5px 0;text-align:center;}
   #deco-ghost{position:absolute;pointer-events:none;display:none;z-index:20;}
-  .io-item{display:block;width:100%;background:none;border:none;padding:8px 14px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:background .15s;}
+  .io-item{display:block;width:100%;background:none;border:none;padding:8px 14px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-align:left;transition:background .15s;}
   .io-item:hover{background:rgba(244,168,58,.1);color:var(--accent);}
   ::-webkit-scrollbar{width:5px;height:5px;}
   ::-webkit-scrollbar-track{background:var(--bg2);}
@@ -406,6 +406,7 @@ let isPanning=false,panStart={cx:0,cy:0,vx:0,vy:0};
 let spaceDown=false,isMouseDown=false;
 let gridMode=0; // 0=off 1=2x2 2=1x1
 let decosVisible=true;
+let highlightName=null, highlightIsDeco=false;
 
 // ─── CANVAS ────────────────────────────────────────────────────────────────
 const canvas=document.getElementById('map-canvas');
@@ -482,8 +483,11 @@ function render(){
       ctx.closePath();
       const td=gridTiles.get(`${tc},${tr}`);
       if(td&&td.img){
+        const dimmed = highlightName!==null && !(highlightIsDeco===false && td.name===highlightName);
+        if(dimmed) ctx.globalAlpha=0.08;
         ctx.save(); ctx.clip(); ctx.drawImage(td.img, sx-TILE_VW/2, sy, TILE_VW, TILE_VH); ctx.restore();
         ctx.strokeStyle='rgba(0,0,0,0.22)'; ctx.lineWidth=0.5/vpZoom; ctx.stroke();
+        if(dimmed) ctx.globalAlpha=1;
       } else if(allowedTile[tr*64+tc]){
         ctx.fillStyle='rgba(255,255,255,0.07)'; ctx.fill();
         ctx.strokeStyle='rgba(255,255,255,0.13)'; ctx.lineWidth=0.5/vpZoom; ctx.stroke();
@@ -504,7 +508,10 @@ function render(){
     for(const d of decoArr){
       const sc=d.dc-DECO_OFF_L, sr=d.dr-DECO_OFF_T;
       const{sx,sy}=isoXY(sc,sr);
+      const dimmedD = highlightName!==null && !(highlightIsDeco===true && d.deco.name===highlightName);
+      if(dimmedD) ctx.globalAlpha=0.08;
       ctx.drawImage(d.deco.img, sx - DECO_VW/2, sy, DECO_VW, DECO_VH);
+      if(dimmedD) ctx.globalAlpha=1;
     }
   }
 
@@ -1050,8 +1057,8 @@ document.getElementById('tool-draw').addEventListener('click',()=>setTool('draw'
 document.getElementById('tool-erase').addEventListener('click',()=>setTool('erase'));
 document.getElementById('tool-fill').addEventListener('click',()=>setTool('fill'));
 function setTool(t){tool=t;document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tool-'+t).classList.add('active');}
-document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm('Очистить карту?'))return;saveHistory();gridTiles.clear();gridDecos.clear();render();updateCounts();});
-document.getElementById('clear-decos-btn').addEventListener('click',()=>{if(!gridDecos.size)return;saveHistory();gridDecos.clear();render();updateCounts();});
+document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm('Очистить карту?'))return;saveHistory();gridTiles.clear();gridDecos.clear();highlightName=null;render();updateCounts();});
+document.getElementById('clear-decos-btn').addEventListener('click',()=>{if(!gridDecos.size)return;saveHistory();gridDecos.clear();highlightName=null;render();updateCounts();});
 
 // ─── UNDO/REDO / GRID ──────────────────────────────────────────────────────
 document.getElementById('btn-undo').addEventListener('click',undo);
@@ -1440,7 +1447,7 @@ function updateCounts(){
   const addGroup=(label,arr)=>{
   if(!arr.length)return;
   const h=document.createElement('li');
-  h.style.cssText='font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 0 3px;font-weight:600;border:none;';
+  h.style.cssText='font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 0 3px;font-weight:700;border:none;';
   h.textContent=label;
   list.appendChild(h);
   for(const{n,c,isDeco}of arr){
@@ -1448,6 +1455,24 @@ function updateCounts(){
     const li=document.createElement('li');
     li.innerHTML=`<div class="tile-thumb">${item?`<img src="${item.src}">`:''}</div><span class="name">${n}</span><span class="count">${c}</span>`;
     list.appendChild(li);
+    li.style.cursor='pointer';
+    li.addEventListener('click',()=>{
+      if(highlightName===n && highlightIsDeco===isDeco){
+        highlightName=null;
+      } else {
+        highlightName=n;
+        highlightIsDeco=isDeco;
+      }
+      render();
+      // Обновляем визуальное выделение в списке
+      list.querySelectorAll('li').forEach(el=>el.style.background='');
+      if(highlightName!==null){
+        li.style.background='rgba(244,168,58,.1)';
+      }
+});
+if(highlightName===n && highlightIsDeco===isDeco){
+  li.style.background='rgba(244,168,58,.1)';
+}
   }
 };
   addGroup('Плитки',tileArr);
