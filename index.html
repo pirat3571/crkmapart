@@ -85,24 +85,29 @@
   ::-webkit-scrollbar-track{background:var(--bg2);}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
   ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+  #lang-toggle{display:flex;align-items:center;gap:6px;}
+  #lang-toggle .flag{font-size:14px;line-height:1;}
 </style>
 </head>
 <body>
 <header>
   <h1>🍪 CRK Map Art Planner</h1>
   <span style="color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;">256×240 · iso</span>
+  <button class="tool-btn" id="lang-toggle" title="Switch language / Сменить язык" style="font-size:11px;padding:3px 9px;">
+    <span class="flag" id="lang-flag">🇷🇺</span><span id="lang-label">RU</span>
+  </button>
   <div style="margin-left:auto;display:flex;gap:7px;align-items:center;">
-    <button class="tool-btn" id="btn-hide-decos" title="Скрыть/показать декорации" style="font-size:11px;padding:3px 9px;">🌸 Скрыть декорации</button>
+    <button class="tool-btn" id="btn-hide-decos" title="Скрыть/показать декорации" style="font-size:11px;padding:3px 9px;" data-i18n="hideDecos">🌸 Скрыть декорации</button>
     <button class="tool-btn" id="btn-undo" disabled title="Ctrl+Z" style="font-size:14px;padding:3px 9px;">↩</button>
     <button class="tool-btn" id="btn-redo" disabled title="Ctrl+Y" style="font-size:14px;padding:3px 9px;">↪</button>
-    <button class="tool-btn" id="btn-grid" style="font-size:12px;padding:3px 9px;">⊟ Выкл</button>
+    <button class="tool-btn" id="btn-grid" style="font-size:12px;padding:3px 9px;" data-i18n="gridOff">⊟ Выкл</button>
     <input type="file" id="btn-load-xml-input" accept=".xml" style="display:none;">
     <div style="position:relative;" id="io-menu-wrap">
-      <button class="tool-btn" id="btn-io-toggle" style="font-size:11px;padding:3px 9px;">Импорт/Экспорт ▾</button>
+      <button class="tool-btn" id="btn-io-toggle" style="font-size:11px;padding:3px 9px;" data-i18n="ioToggle">Импорт/Экспорт ▾</button>
       <div id="io-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:6px;min-width:155px;z-index:50;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4);">
-        <button class="io-item" id="export-btn">💾 PNG</button>
-        <button class="io-item" id="btn-save-xml">💾 XML</button>
-        <label class="io-item" for="btn-load-xml-input" style="cursor:pointer;">📁 XML (загрузить)</label>
+        <button class="io-item" id="export-btn" data-i18n="exportPng">💾 PNG</button>
+        <button class="io-item" id="btn-save-xml" data-i18n="exportXml">💾 XML</button>
+        <label class="io-item" for="btn-load-xml-input" style="cursor:pointer;" data-i18n="importXml">📁 XML (загрузить)</label>
       </div>
     </div>
   </div>
@@ -111,124 +116,124 @@
 <div class="main">
   <div class="sidebar">
     <div class="sidebar-section">
-      <h3>Импорт фото</h3>
+      <h3 data-i18n="importPhoto">Импорт фото</h3>
       <label class="upload-btn" for="img-upload">
         <span class="icon">🖼</span>
-        <div>Загрузить изображение<span class="hint">PNG / JPG / WEBP</span></div>
+        <div><span data-i18n="uploadImage">Загрузить изображение</span><span class="hint" data-i18n="uploadImageHint">PNG / JPG / WEBP</span></div>
       </label>
       <input type="file" id="img-upload" accept="image/*">
       <div class="source-preview" id="source-preview">
   <canvas id="source-fx-canvas" style="width:100%;display:block;"></canvas>
   <img id="source-img" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s ease;">
 </div>
-<div id="src-fx-hint" style="display:none;font-size:9px;color:var(--muted);margin-top:3px;line-height:1.4;">💡 Лагает? Кликни на превью чтобы отключить обработку</div>
+<div id="src-fx-hint" style="display:none;font-size:9px;color:var(--muted);margin-top:3px;line-height:1.4;" data-i18n="srcFxHint">💡 Лагает? Кликни на превью чтобы отключить обработку</div>
       <div id="img-overlay-controls" style="display:none;margin-top:7px;">
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
-          <span style="font-size:10px;color:var(--muted);width:56px;">Прозрачность</span>
+          <span style="font-size:10px;color:var(--muted);width:56px;" data-i18n="opacity">Прозрачность</span>
           <input type="range" id="img-opacity" min="10" max="90" value="45" style="flex:1;">
         </div>
         <div style="display:flex;gap:4px;">
-          <button class="tool-btn" id="img-fit-btn" style="flex:1;font-size:10px;">⛶ Вписать</button>
-          <button class="tool-btn" id="img-hide-btn" style="flex:1;font-size:10px;">👁 Скрыть</button>
+          <button class="tool-btn" id="img-fit-btn" style="flex:1;font-size:10px;" data-i18n="fitBtn">⛶ Вписать</button>
+          <button class="tool-btn" id="img-hide-btn" style="flex:1;font-size:10px;" data-i18n="hideBtn">👁 Скрыть</button>
         </div>
       </div>
     </div>
 
     <div class="sidebar-section" id="img-postfx-section" style="display:none;">
-      <h3>Обработка изображения</h3>
+      <h3 data-i18n="imgProcessing">Обработка изображения</h3>
       <div class="postfx-row">
-        <span class="postfx-label">Яркость</span>
+        <span class="postfx-label" data-i18n="brightness">Яркость</span>
         <input type="range" id="fx-brightness" min="-100" max="100" value="0">
         <span class="postfx-val" id="fx-brightness-val">0</span>
       </div>
       <div class="postfx-row">
-        <span class="postfx-label">Контраст</span>
+        <span class="postfx-label" data-i18n="contrast">Контраст</span>
         <input type="range" id="fx-contrast" min="-100" max="100" value="0">
         <span class="postfx-val" id="fx-contrast-val">0</span>
       </div>
       <div class="postfx-row">
-        <span class="postfx-label">Насыщенность</span>
+        <span class="postfx-label" data-i18n="saturation">Насыщенность</span>
         <input type="range" id="fx-saturation" min="-100" max="100" value="0">
         <span class="postfx-val" id="fx-saturation-val">0</span>
       </div>
       <div class="postfx-row">
-        <span class="postfx-label">Резкость краёв</span>
+        <span class="postfx-label" data-i18n="sharpen">Резкость краёв</span>
         <input type="range" id="fx-sharpen" min="0" max="100" value="0">
         <span class="postfx-val" id="fx-sharpen-val">0</span>
       </div>
       <div class="postfx-row">
-        <span class="postfx-label">Постеризация</span>
+        <span class="postfx-label" data-i18n="posterize">Постеризация</span>
         <input type="range" id="fx-posterize" min="0" max="8" value="0">
-        <span class="postfx-val" id="fx-posterize-val">выкл</span>
+        <span class="postfx-val" id="fx-posterize-val" data-i18n="off">выкл</span>
       </div>
-      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками">
-        <span style="font-size:11px;color:var(--muted);">Дизеринг (сглаживание)</span>
+      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками" data-i18n-title="ditherTitle">
+        <span style="font-size:11px;color:var(--muted);" data-i18n="dither">Дизеринг (сглаживание)</span>
         <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
           <input type="checkbox" id="fx-dither" style="opacity:0;width:0;height:0;position:absolute;">
           <span id="fx-dither-track" style="position:absolute;inset:0;background:var(--bg);border:1px solid var(--border);border-radius:17px;transition:background .2s;"></span>
           <span id="fx-dither-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;"></span>
         </span>
       </label>
-      <button class="fill-all-btn" id="fx-reset-btn" style="margin-top:6px;">↺ Сбросить настройки</button>
+      <button class="fill-all-btn" id="fx-reset-btn" style="margin-top:6px;" data-i18n="resetFx">↺ Сбросить настройки</button>
     </div>
 
     <div class="sidebar-section">
-      <h3>Инструменты</h3>
+      <h3 data-i18n="tools">Инструменты</h3>
       <div class="toolbar">
-        <button class="tool-btn active" id="tool-draw">✏ Рисовать</button>
-        <button class="tool-btn" id="tool-erase">✕ Ластик</button>
-        <button class="tool-btn" id="tool-fill">🪣 Заливка</button>
+        <button class="tool-btn active" id="tool-draw" data-i18n="toolDraw">✏ Рисовать</button>
+        <button class="tool-btn" id="tool-erase" data-i18n="toolErase">✕ Ластик</button>
+        <button class="tool-btn" id="tool-fill" data-i18n="toolFill">🪣 Заливка</button>
       </div>
-      <button class="fill-all-btn" id="apply-img">🎨 Применить изображение</button>
-      <button class="fill-all-btn" id="clear-btn" style="margin-top:3px;border-color:#7a2020;color:#e87d7d;">🗑 Очистить карту</button>
+      <button class="fill-all-btn" id="apply-img" data-i18n="applyImage">🎨 Применить изображение</button>
+      <button class="fill-all-btn" id="clear-btn" style="margin-top:3px;border-color:#7a2020;color:#e87d7d;" data-i18n="clearMap">🗑 Очистить карту</button>
       <!-- Threshold slider -->
       <div style="margin-top:8px;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span style="font-size:10px;color:var(--muted);">Порог цвета для декораций</span>
+          <span style="font-size:10px;color:var(--muted);" data-i18n="decoThreshold">Порог цвета для декораций</span>
           <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="deco-threshold-val">1500</span>
         </div>
         <input type="range" id="deco-threshold" min="0" max="5000" value="1500" style="width:100%;accent-color:var(--accent);">
         <div style="display:flex;justify-content:space-between;margin-top:2px;">
-          <span style="font-size:9px;color:var(--muted);">меньше</span>
-          <span style="font-size:9px;color:var(--muted);">больше</span>
+          <span style="font-size:9px;color:var(--muted);" data-i18n="less">меньше</span>
+          <span style="font-size:9px;color:var(--muted);" data-i18n="more">больше</span>
         </div>
       </div>
       <!-- Toggle: use decos on image apply -->
-      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Применять декорации при импорте изображения">
-        <span style="font-size:11px;color:var(--muted);">Декорации при импорте</span>
+      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Применять декорации при импорте изображения" data-i18n-title="decosOnImportTitle">
+        <span style="font-size:11px;color:var(--muted);" data-i18n="decosOnImport">Декорации при импорте</span>
         <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
           <input type="checkbox" id="apply-decos" checked style="opacity:0;width:0;height:0;position:absolute;">
           <span id="apply-decos-track" style="position:absolute;inset:0;background:var(--accent);border-radius:17px;transition:background .2s;"></span>
           <span id="apply-decos-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;left:17px;"></span>
         </span>
       </label>
-      <button class="fill-all-btn" id="clear-decos-btn" style="margin-top:8px;border-color:#7a2020;color:#e87d7d;">🚫 Убрать все декорации</button>
+      <button class="fill-all-btn" id="clear-decos-btn" style="margin-top:8px;border-color:#7a2020;color:#e87d7d;" data-i18n="clearDecos">🚫 Убрать все декорации</button>
     </div>
 
     <div class="sidebar-section" style="flex:1;">
-      <h3>Палитра</h3>
+      <h3 data-i18n="palette">Палитра</h3>
       <div class="tab-bar">
-        <button class="tab-btn active" id="tab-tiles">🧱 Плитки</button>
-        <button class="tab-btn" id="tab-decos">🌸 Декорации</button>
+        <button class="tab-btn active" id="tab-tiles" data-i18n="tabTiles">🧱 Плитки</button>
+        <button class="tab-btn" id="tab-decos" data-i18n="tabDecos">🌸 Декорации</button>
       </div>
       <div class="tab-panel active" id="panel-tiles">
         <label class="upload-btn" for="tiles-upload">
           <span class="icon">+</span>
-          <div>Добавить плитки<span class="hint">WebP, множественный выбор</span></div>
+          <div><span data-i18n="addTiles">Добавить плитки</span><span class="hint" data-i18n="addTilesHint">WebP, множественный выбор</span></div>
         </label>
         <input type="file" id="tiles-upload" accept=".webp,image/webp" multiple>
-        <div id="tiles-loading">⏳ Загрузка плиток…</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:4px;">ПКМ — откл/вкл</div>
+        <div id="tiles-loading" data-i18n="loadingTiles">⏳ Загрузка плиток…</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px;" data-i18n="rmbToggle">ПКМ — откл/вкл</div>
         <div id="palette-grid" class="palette-grid"></div>
       </div>
       <div class="tab-panel" id="panel-decos">
         <label class="upload-btn" for="decos-upload">
           <span class="icon">+</span>
-          <div>Добавить декорации<span class="hint">PNG с прозрачностью</span></div>
+          <div><span data-i18n="addDecos">Добавить декорации</span><span class="hint" data-i18n="addDecosHint">PNG с прозрачностью</span></div>
         </label>
         <input type="file" id="decos-upload" accept=".png,image/png" multiple>
-        <div id="decos-loading">⏳ Загрузка декораций…</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:4px;">ПКМ — откл/вкл</div>
+        <div id="decos-loading" data-i18n="loadingDecos">⏳ Загрузка декораций…</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px;" data-i18n="rmbToggle">ПКМ — откл/вкл</div>
         <div id="deco-grid" class="deco-grid"></div>
       </div>
     </div>
@@ -239,25 +244,25 @@
     <canvas id="deco-ghost" style="position:absolute;pointer-events:none;display:none;"></canvas>
     <div class="hint-overlay" id="hint-overlay">
       <button id="hint-close" style="position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:10px;line-height:14px;text-align:center;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;transition:border-color .15s,color .15s;">✕</button>
-      Колесико — масштаб<br>
-      Пробел + ЛКМ — двигать камеру<br>
-      ЛКМ — поставить<br>
-      ПКМ — убрать плитку/декор<br>
-      Переключайтесь между декором<br>и плитками для работы с ними<br>
-      Кликните на объект в "Расходе"<br>чтобы скрыть все кроме него
+      <span data-i18n="hint1">Колесико — масштаб</span><br>
+      <span data-i18n="hint2">Пробел + ЛКМ — двигать камеру</span><br>
+      <span data-i18n="hint3">ЛКМ — поставить</span><br>
+      <span data-i18n="hint4">ПКМ — убрать плитку/декор</span><br>
+      <span data-i18n="hint5">Переключайтесь между декором<br>и плитками для работы с ними</span><br>
+      <span data-i18n="hint6">Кликните на объект в "Расходе"<br>чтобы скрыть все кроме него</span>
     </div>
   </div>
 
   <div class="right-panel">
-    <h3>Расход</h3>
+    <h3 data-i18n="expense">Расход</h3>
     <div style="padding:4px 12px 9px;flex:1;display:flex;flex-direction:column;min-height:0;">
       <ul class="counts-list" id="counts-list">
-        <li style="color:var(--muted);font-size:10px;padding:5px 0;">Нарисуйте карту</li>
+        <li style="color:var(--muted);font-size:10px;padding:5px 0;" data-i18n="drawMapHint">Нарисуйте карту</li>
       </ul>
     </div>
-    <h3>Выбрано</h3>
+    <h3 data-i18n="selected">Выбрано</h3>
     <div class="sel-info">
-      <div class="sel-preview" id="selected-preview"><span>Не выбрано</span></div>
+      <div class="sel-preview" id="selected-preview"><span data-i18n="notSelected">Не выбрано</span></div>
       <div class="sel-name" id="selected-name">—</div>
       <div class="sel-meta" id="selected-meta"></div>
     </div>
@@ -265,17 +270,17 @@
 </div>
 
 <div class="status-bar">
-  <div class="status-cell-fixed">Ячейка: <span id="pos-label">—</span></div>
-  <div>Объект: <span id="tile-label">—</span></div>
-  <div>Плиток: <span id="total-tiles">0</span></div>
-  <div>Декор: <span id="total-decos">0</span></div>
-  <div>Зум: <span id="zoom-label">100%</span></div>
+  <div class="status-cell-fixed"><span data-i18n="cell">Ячейка:</span> <span id="pos-label">—</span></div>
+  <div><span data-i18n="object">Объект:</span> <span id="tile-label">—</span></div>
+  <div><span data-i18n="tilesCount">Плиток:</span> <span id="total-tiles">0</span></div>
+  <div><span data-i18n="decosCount">Декор:</span> <span id="total-decos">0</span></div>
+  <div><span data-i18n="zoom">Зум:</span> <span id="zoom-label">100%</span></div>
 </div>
 
 <div id="dropzone-overlay">
   <div style="font-size:36px;">🧱</div>
-  <div>ПЕРЕТАЩИ ФАЙЛЫ</div>
-  <div style="font-size:11px;font-weight:400;color:var(--muted);">WebP плитки · PNG декорации · изображение</div>
+  <div data-i18n="dropFiles">ПЕРЕТАЩИ ФАЙЛЫ</div>
+  <div style="font-size:11px;font-weight:400;color:var(--muted);" data-i18n="dropFilesHint">WebP плитки · PNG декорации · изображение</div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 
@@ -286,10 +291,109 @@
 //   Deco      = 2×2 sub-units   → placed on ANY integer position, step=1
 //   Grid size = 256 × 240 sub-units  (= 64×60 tiles × 4)
 // ═══════════════════════════════════════════════════════════════════════════
+
+// ─── I18N ───────────────────────────────────────────────────────────────
+const I18N = {
+  ru: {
+    hideDecos:'🌸 Скрыть декорации', showDecos:'🌸 Показать декорации',
+    gridOff:'⊟ Выкл', grid2:'⊞ 2×2', grid1:'⊞ 1×1',
+    ioToggle:'Импорт/Экспорт ▾', exportPng:'💾 PNG', exportXml:'💾 XML', importXml:'📁 XML (загрузить)',
+    importPhoto:'Импорт фото', uploadImage:'Загрузить изображение', uploadImageHint:'PNG / JPG / WEBP',
+    srcFxHint:'💡 Лагает? Кликни на превью чтобы отключить обработку',
+    opacity:'Прозрачность', fitBtn:'⛶ Вписать', hideBtn:'👁 Скрыть', showBtn:'👁 Показать',
+    imgProcessing:'Обработка изображения', brightness:'Яркость', contrast:'Контраст', saturation:'Насыщенность',
+    sharpen:'Резкость краёв', posterize:'Постеризация', off:'выкл',
+    ditherTitle:'Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками',
+    dither:'Дизеринг (сглаживание)', resetFx:'↺ Сбросить настройки',
+    tools:'Инструменты', toolDraw:'✏ Рисовать', toolErase:'✕ Ластик', toolFill:'🪣 Заливка',
+    applyImage:'🎨 Применить изображение', clearMap:'🗑 Очистить карту',
+    decoThreshold:'Порог цвета для декораций', less:'меньше', more:'больше',
+    decosOnImportTitle:'Применять декорации при импорте изображения', decosOnImport:'Декорации при импорте',
+    clearDecos:'🚫 Убрать все декорации',
+    palette:'Палитра', tabTiles:'🧱 Плитки', tabDecos:'🌸 Декорации',
+    addTiles:'Добавить плитки', addTilesHint:'WebP, множественный выбор',
+    loadingTiles:'⏳ Загрузка плиток…', rmbToggle:'ПКМ — откл/вкл',
+    addDecos:'Добавить декорации', addDecosHint:'PNG с прозрачностью', loadingDecos:'⏳ Загрузка декораций…',
+    hint1:'Колесико — масштаб', hint2:'Пробел + ЛКМ — двигать камеру', hint3:'ЛКМ — поставить',
+    hint4:'ПКМ — убрать плитку/декор', hint5:'Переключайтесь между декором<br>и плитками для работы с ними',
+    hint6:'Кликните на объект в "Расходе"<br>чтобы скрыть все кроме него',
+    expense:'Расход', drawMapHint:'Нарисуйте карту', selected:'Выбрано', notSelected:'Не выбрано',
+    cell:'Ячейка:', object:'Объект:', tilesCount:'Плиток:', decosCount:'Декор:', zoom:'Зум:',
+    dropFiles:'ПЕРЕТАЩИ ФАЙЛЫ', dropFilesHint:'WebP плитки · PNG декорации · изображение',
+    tileLabel:'Плитка 4×4', decoLabel:'Декорация 2×2', usedLabel:'Исп: ',
+    empty:'Пусто', groupTiles:'Плитки', groupDecos:'Декорации',
+    alertLoadImage:'Загрузите изображение!', alertLoadTiles:'Загрузите плитки!',
+    confirmClearMap:'Очистить карту?', alertXmlError:'Ошибка загрузки XML: ',
+    langSwitchTitle:'Switch language / Сменить язык',
+  },
+  en: {
+    hideDecos:'🌸 Hide decorations', showDecos:'🌸 Show decorations',
+    gridOff:'⊟ Off', grid2:'⊞ 2×2', grid1:'⊞ 1×1',
+    ioToggle:'Import/Export ▾', exportPng:'💾 PNG', exportXml:'💾 XML', importXml:'📁 XML (load)',
+    importPhoto:'Import photo', uploadImage:'Upload image', uploadImageHint:'PNG / JPG / WEBP',
+    srcFxHint:'💡 Lagging? Click the preview to disable processing',
+    opacity:'Opacity', fitBtn:'⛶ Fit', hideBtn:'👁 Hide', showBtn:'👁 Show',
+    imgProcessing:'Image processing', brightness:'Brightness', contrast:'Contrast', saturation:'Saturation',
+    sharpen:'Edge sharpen', posterize:'Posterize', off:'off',
+    ditherTitle:'Dithering (Floyd–Steinberg) for smoother transitions between tiles',
+    dither:'Dithering (smoothing)', resetFx:'↺ Reset settings',
+    tools:'Tools', toolDraw:'✏ Draw', toolErase:'✕ Erase', toolFill:'🪣 Fill',
+    applyImage:'🎨 Apply image', clearMap:'🗑 Clear map',
+    decoThreshold:'Decoration color threshold', less:'less', more:'more',
+    decosOnImportTitle:'Apply decorations when importing an image', decosOnImport:'Decorations on import',
+    clearDecos:'🚫 Remove all decorations',
+    palette:'Palette', tabTiles:'🧱 Tiles', tabDecos:'🌸 Decorations',
+    addTiles:'Add tiles', addTilesHint:'WebP, multiple selection',
+    loadingTiles:'⏳ Loading tiles…', rmbToggle:'RMB — off/on',
+    addDecos:'Add decorations', addDecosHint:'PNG with transparency', loadingDecos:'⏳ Loading decorations…',
+    hint1:'Wheel — zoom', hint2:'Space + LMB — move camera', hint3:'LMB — place',
+    hint4:'RMB — remove tile/decor', hint5:'Switch between decor<br>and tiles to work with them',
+    hint6:'Click an item in "Usage"<br>to hide all but it',
+    expense:'Usage', drawMapHint:'Draw the map', selected:'Selected', notSelected:'Not selected',
+    cell:'Cell:', object:'Object:', tilesCount:'Tiles:', decosCount:'Decor:', zoom:'Zoom:',
+    dropFiles:'DROP FILES', dropFilesHint:'WebP tiles · PNG decorations · image',
+    tileLabel:'Tile 4×4', decoLabel:'Decoration 2×2', usedLabel:'Used: ',
+    empty:'Empty', groupTiles:'Tiles', groupDecos:'Decorations',
+    alertLoadImage:'Upload an image!', alertLoadTiles:'Upload tiles!',
+    confirmClearMap:'Clear the map?', alertXmlError:'Error loading XML: ',
+    langSwitchTitle:'Switch language / Сменить язык',
+  }
+};
+let LANG = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en';
+function t(key){ return (I18N[LANG] && I18N[LANG][key]) !== undefined ? I18N[LANG][key] : key; }
+
+function applyI18n(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.innerHTML = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
+  });
+  document.getElementById('lang-flag').textContent = LANG==='ru' ? '🇷🇺' : '🇺🇸';
+  document.getElementById('lang-label').textContent = LANG==='ru' ? 'RU' : 'EN';
+  document.getElementById('lang-toggle').title = t('langSwitchTitle');
+  document.getElementById('btn-hide-decos').textContent = decosVisible ? t('hideDecos') : t('showDecos');
+  document.getElementById('btn-grid').textContent = GRID_LABELS_KEY[gridMode] ? t(GRID_LABELS_KEY[gridMode]) : t('gridOff');
+  document.getElementById('img-hide-btn').textContent = imgOvVisible ? t('hideBtn') : t('showBtn');
+  const fxPosterizeEl=document.getElementById('fx-posterize');
+  document.getElementById('fx-posterize-val').textContent = fxPosterizeEl.value==='0' ? t('off') : fxPosterizeEl.value;
+  // Re-render dynamic pieces that embed translated text
+  if(typeof renderPalette==='function') renderPalette();
+  if(typeof renderDecoGrid==='function') renderDecoGrid();
+  if(typeof updateCounts==='function') updateCounts();
+  if(typeof selectedTile!=='undefined' && selectedTile) document.getElementById('selected-meta').textContent = document.getElementById('selected-meta').textContent; // meta refreshed by selectTile/updateCounts
+}
+
+document.getElementById('lang-toggle').addEventListener('click', ()=>{
+  LANG = LANG==='ru' ? 'en' : 'ru';
+  applyI18n();
+});
+
 const SCOLS = 256;   // sub-columns
 const SROWS = 240;   // sub-rows
 const TILE  = 4;     // sub-units per tile side
-const DECO  = 2;     // sub-units step for the "2×2" grid display mode (unrelated to deco placement)
+const DECO  = 2;     // sub-units step for the "2x2" grid display mode (unrelated to deco placement)
 const DECO_SPAN = 2;     // deco occupies a 2×2 sub-unit footprint (for collision/placement)
 
 // iso pixel size of ONE sub-unit
@@ -904,14 +1008,14 @@ function renderPalette(){
 }
 function toggleDisableTile(tile,div){
   if(disabledTiles.has(tile.name)){disabledTiles.delete(tile.name);div.classList.remove('disabled');}
-  else{disabledTiles.add(tile.name);div.classList.add('disabled');if(selectedTile&&selectedTile.name===tile.name){selectedTile=null;document.getElementById('selected-preview').innerHTML='<span>Не выбрано</span>';document.getElementById('selected-name').textContent='—';}}
+  else{disabledTiles.add(tile.name);div.classList.add('disabled');if(selectedTile&&selectedTile.name===tile.name){selectedTile=null;document.getElementById('selected-preview').innerHTML=`<span>${t('notSelected')}</span>`;document.getElementById('selected-name').textContent='—';}}
 }
 function selectTile(tile){
   selectedTile=tile;selectedDeco=null;activeLayer='tile';
   document.getElementById('tab-tiles').click();
   document.getElementById('selected-preview').innerHTML=`<img src="${tile.src}">`;
   document.getElementById('selected-name').textContent=tile.name;
-  document.getElementById('selected-meta').textContent='Плитка 4×4';
+  document.getElementById('selected-meta').textContent=t('tileLabel');
   setTool('draw');
 }
 
@@ -937,14 +1041,14 @@ function renderDecoGrid(){
 }
 function toggleDisableDeco(deco,div){
   if(disabledDecos.has(deco.name)){disabledDecos.delete(deco.name);div.classList.remove('disabled');}
-  else{disabledDecos.add(deco.name);div.classList.add('disabled');if(selectedDeco&&selectedDeco.name===deco.name){selectedDeco=null;document.getElementById('selected-preview').innerHTML='<span>Не выбрано</span>';document.getElementById('selected-name').textContent='—';}}
+  else{disabledDecos.add(deco.name);div.classList.add('disabled');if(selectedDeco&&selectedDeco.name===deco.name){selectedDeco=null;document.getElementById('selected-preview').innerHTML=`<span>${t('notSelected')}</span>`;document.getElementById('selected-name').textContent='—';}}
 }
 function selectDeco(deco){
   selectedDeco=deco;selectedTile=null;activeLayer='deco';
   document.getElementById('tab-decos').click();
   document.getElementById('selected-preview').innerHTML=`<img src="${deco.src}" style="object-fit:contain;">`;
   document.getElementById('selected-name').textContent=deco.name;
-  document.getElementById('selected-meta').textContent='Декорация 2×2';
+  document.getElementById('selected-meta').textContent=t('decoLabel');
   setTool('draw');
 }
 
@@ -982,7 +1086,7 @@ function addDecos(nd){for(const d of nd){const i=decos.findIndex(x=>x.name===d.n
 // ─── DEFAULT ASSET LISTS ───────────────────────────────────────────────────
 const TILE_FILES=['Aromatic_Stone_Path.webp','Biscuit_Road_of_Possibilities.webp','Black_Sesame_Tile.webp','Blue_vanilla_tiles.webp','Cheese_sand_tile.webp','Chocolate_Block_Asphalt_Tile.webp','Cinnamon_roll_tile.webp','Cinnamon_sprinkle_road.webp','Coarse_salt_tiles.webp','Cobbled_Spice_Tiles.webp','Creepy_red_tiles.webp','Creme_Brulee_Tiles.webp','Decor_biscuitstone_road.webp','Decor_biscuitstone_tile.webp','Decor_cherry_blossom_carpet_tiles.webp','Decor_chocostone_road.webp','Decor_chocostone_tile.webp','Decor_chocowood_tile.webp','Decor_constellation_tile.webp','Decor_constellation_tile_2.webp','Decor_cookie_cream_tile.webp','Decor_dark_choco_tile_of_darkness.webp','Decor_frosty_tile.webp','Decor_jellystone_tile.webp','Decor_lawn.webp','Decor_pink_waffer_tiles.webp','Decor_red_velvet_carpet.webp','Decor_seaside_sand_path.webp','Decor_slippery_icy_road.webp','Decor_snowy_road.webp','Decor_village_lane.webp','Faerie_Ancient_Insignia_Tiles.webp','Faerie_Courtyard_Tiles.webp','Flower_City_Stone_Tiles.webp','Flower_meadow_tile.webp','Geometric_Spice_Tiles.webp','Green_Hill_Matcha_Grass.webp','Hard_almond_tiles.webp','Ivory_Pagoda_Tiles.webp',"Mickey%27s_biscuit_tiles.webp","Mickey%27s_cheese_tiles.webp",'Midsummer_tiles_of_dreams.webp','Morning_Star_Tile.webp','Old_stone_tiles.webp','Ornate_Ancient_Road.webp','Ornate_Citadel_Title.webp','Ornate_cheese_sand_tile.webp','Peculiar_Dream_Matter.webp','Railroad_of_endless_dreams_29.webp','Road_to_eternity_29.webp','Seashell_Tile.webp','Silent_salt_tiles.webp','Simple_stone_tile.webp','Strawberry_vanilla_tiles.webp','Tea_Leaf_Tiles.webp','Tile_Entrenched_in_Lies.webp','Tile_Seeped_in_Lies.webp','Tiles_of_Blooming_Dreams.webp','Twinkling_Star_Tiles.webp','Volcanic_brownie_tile.webp'];
 const TILE_NAMES=TILE_FILES.map(f=>decodeURIComponent(f.replace(/\.webp$/,'')));
-const DECO_FILES=['AlmondGardenTree.png','AudienceCoconut.png','BasketOfBerries.png','BiscuitHaySheaf.png','BlackSugarTumbleweed.png','CacaoManholeLid.png','CandyCornHermitCrab.png','CaneleLavaVent.png','ChocoAcorn.png','CilantroBush.png','CinnamonRollBoulder.png','ComfyCandyStool.png','ConchOfTheSea.png','CreamCottonSheep.png','DumplingCenser.png','DurianStaff.png','DurianeerCannonball.png','FungalBloomOfAgony.png','HibiscusBush.png','JellyCubeBougainvillea.png','JellyStarfish.png','LilySoakedInCrimsonJam.png','MalaTribeBrazier.png','MeatManduFlower.png','OldSugarTombstone.png','OsmantusBush.png','PlumeriaFlowerbed.png','PoisonousHelmbloom.png','PureSaffron.png','PurpleBraziel.png','RedJellyFireHydrant.png','SaltyRosemary.png','SeaSaltCoralReef.png','SiuMaiFlower.png','SodaStarJelly.png','StarJellyFlower.png','StrawberryChocoPansies.png','SturdyBarrel.png','SugarGlaceBerry.png','SweetStickFirewood.png','TravelBagOfTrill.png','VolcanicSucculent.png','WelcomingSugarGnome.png'];
+const DECO_FILES=['AlmondGardenTree.png','AudienceCoconut.png','BasketOfBerries.png','BiscuitHaySheaf.png','BlackSugarTumbleweed.png','CacaoManholeLid.png','CandyCornHermitCrab.png','CaneleLavaVent.png','ChocoAcorn.png','CilantroBush.png','ComfyCandyStool.png','ConchOfTheSea.png','CreamCottonSheep.png','DumplingCenser.png','DurianStaff.png','DurianeerCannonball.png','FungalBloomOfAgony.png','HibiscusBush.png','JellyCubeBougainvillea.png','JellyStarfish.png','LilySoakedInCrimsonJam.png','MalaTribeBrazier.png','MeatManduFlower.png','OldSugarTombstone.png','OsmantusBush.png','PlumeriaFlowerbed.png','PoisonousHelmbloom.png','PureSaffron.png','PurpleBraziel.png','RedJellyFireHydrant.png','SaltyRosemary.png','SeaSaltCoralReef.png','SiuMaiFlower.png','SodaStarJelly.png','StarJellyFlower.png','StrawberryChocoPansies.png','SturdyBarrel.png','SugarGlaceBerry.png','SweetStickFirewood.png','TravelBagOfTrill.png','VolcanicSucculent.png','WelcomingSugarGnome.png'];
 const DECO_NAMES=DECO_FILES.map(f=>f.replace(/\.png$/,''));
 
 async function fetchAsset(url){const r=await fetch(url);if(!r.ok)throw r.status;const b=await r.blob();return new Promise(res=>{const fr=new FileReader();fr.onload=e=>res(e.target.result);fr.readAsDataURL(b);});}
@@ -1049,7 +1153,7 @@ document.getElementById('img-fit-btn').addEventListener('click',()=>{
   imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;imgOvVisible=true;render();
 });
 document.getElementById('img-hide-btn').addEventListener('click',()=>{
-  imgOvVisible=!imgOvVisible;document.getElementById('img-hide-btn').textContent=imgOvVisible?'👁 Скрыть':'👁 Показать';render();
+  imgOvVisible=!imgOvVisible;document.getElementById('img-hide-btn').textContent=imgOvVisible?t('hideBtn'):t('showBtn');render();
   document.getElementById('src-fx-hint').style.display=imgOvVisible?'block':'none';
 });
 
@@ -1058,7 +1162,7 @@ document.getElementById('tool-draw').addEventListener('click',()=>setTool('draw'
 document.getElementById('tool-erase').addEventListener('click',()=>setTool('erase'));
 document.getElementById('tool-fill').addEventListener('click',()=>setTool('fill'));
 function setTool(t){tool=t;document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tool-'+t).classList.add('active');}
-document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm('Очистить карту?'))return;saveHistory();gridTiles.clear();gridDecos.clear();highlightName=null;render();updateCounts();});
+document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm(t('confirmClearMap')))return;saveHistory();gridTiles.clear();gridDecos.clear();highlightName=null;render();updateCounts();});
 document.getElementById('clear-decos-btn').addEventListener('click',()=>{if(!gridDecos.size)return;saveHistory();gridDecos.clear();highlightName=null;render();updateCounts();});
 
 // ─── UNDO/REDO / GRID ──────────────────────────────────────────────────────
@@ -1067,7 +1171,7 @@ document.getElementById('btn-redo').addEventListener('click',redo);
 document.getElementById('btn-hide-decos').addEventListener('click',()=>{
   decosVisible=!decosVisible;
   const btn=document.getElementById('btn-hide-decos');
-  btn.textContent=decosVisible?'🌸 Скрыть декорации':'🌸 Показать декорации';
+  btn.textContent=decosVisible?t('hideDecos'):t('showDecos');
   btn.style.opacity=decosVisible?'1':'0.5';
   render();
 });
@@ -1097,9 +1201,9 @@ srcPreview.addEventListener('click',()=>{
   updateSourcePreview();
 });
 srcPreview.style.cursor='default';
-const GRID_LABELS=['⊟ Выкл','⊞ 2×2','⊞ 1×1'];
+const GRID_LABELS_KEY=['gridOff','grid2','grid1'];
 document.getElementById('btn-grid').addEventListener('click',()=>{
-  gridMode=(gridMode+1)%3;document.getElementById('btn-grid').textContent=GRID_LABELS[gridMode];render();
+  gridMode=(gridMode+1)%3;document.getElementById('btn-grid').textContent=t(GRID_LABELS_KEY[gridMode]);render();
 });
 
 // ─── APPLY IMAGE ───────────────────────────────────────────────────────────
@@ -1375,8 +1479,8 @@ function updateSourcePreview(){
 }
 
 document.getElementById('apply-img').addEventListener('click',()=>{
-  if(!sourceImage){alert('Загрузите изображение!');return;}
-  if(!tiles.length){alert('Загрузите плитки!');return;}
+  if(!sourceImage){alert(t('alertLoadImage'));return;}
+  if(!tiles.length){alert(t('alertLoadTiles'));return;}
 
   saveHistory();
   sampleImageGrid();
@@ -1401,7 +1505,7 @@ for(const id of fxIds){
 const fxPosterize=document.getElementById('fx-posterize');
 const fxPosterizeVal=document.getElementById('fx-posterize-val');
 fxPosterize.addEventListener('input',()=>{
-  fxPosterizeVal.textContent = fxPosterize.value==='0' ? 'выкл' : fxPosterize.value;
+  fxPosterizeVal.textContent = fxPosterize.value==='0' ? t('off') : fxPosterize.value;
   reapplyImage();
 });
 
@@ -1422,7 +1526,7 @@ document.getElementById('fx-reset-btn').addEventListener('click',()=>{
   document.getElementById('fx-contrast').value=0; document.getElementById('fx-contrast-val').textContent='0';
   document.getElementById('fx-saturation').value=0; document.getElementById('fx-saturation-val').textContent='0';
   document.getElementById('fx-sharpen').value=0; document.getElementById('fx-sharpen-val').textContent='0';
-  document.getElementById('fx-posterize').value=0; fxPosterizeVal.textContent='выкл';
+  document.getElementById('fx-posterize').value=0; fxPosterizeVal.textContent=t('off');
   fxDitherChk.checked=false; syncDitherToggle();
   reapplyImage();
 });
@@ -1433,8 +1537,8 @@ function updateCounts(){
   const tileCounts={};
   for(let tr=0;tr<60;tr++)for(let tc=0;tc<64;tc++){
     if(!allowedTile[tr*64+tc])continue;
-    const t=gridTiles.get(`${tc},${tr}`);
-    if(t){tileCounts[t.name]=(tileCounts[t.name]||0)+1;totalT++;}else free++;
+    const tl=gridTiles.get(`${tc},${tr}`);
+    if(tl){tileCounts[tl.name]=(tileCounts[tl.name]||0)+1;totalT++;}else free++;
   }
   const decoCounts={};
   for(const[,d]of gridDecos)decoCounts[d.deco.name]=(decoCounts[d.deco.name]||0)+1;
@@ -1444,7 +1548,7 @@ function updateCounts(){
   const decoArr=Object.entries(decoCounts).map(([n,c])=>({n,c,isDeco:true})).sort((a,b)=>b.c-a.c);
   const list=document.getElementById('counts-list');
   list.innerHTML='';
-  if(!tileArr.length&&!decoArr.length){list.innerHTML='<li style="color:var(--muted);font-size:10px;padding:5px 0;">Пусто</li>';return;}
+  if(!tileArr.length&&!decoArr.length){list.innerHTML=`<li style="color:var(--muted);font-size:10px;padding:5px 0;">${t('empty')}</li>`;return;}
   const addGroup=(label,arr)=>{
   if(!arr.length)return;
   const h=document.createElement('li');
@@ -1452,7 +1556,7 @@ function updateCounts(){
   h.textContent=label;
   list.appendChild(h);
   for(const{n,c,isDeco}of arr){
-    const item=isDeco?decos.find(d=>d.name===n):tiles.find(t=>t.name===n);
+    const item=isDeco?decos.find(d=>d.name===n):tiles.find(tl=>tl.name===n);
     const li=document.createElement('li');
     li.innerHTML=`<div class="tile-thumb">${item?`<img src="${item.src}">`:''}</div><span class="name">${n}</span><span class="count">${c}</span>`;
     list.appendChild(li);
@@ -1476,10 +1580,10 @@ if(highlightName===n && highlightIsDeco===isDeco){
 }
   }
 };
-  addGroup('Плитки',tileArr);
-  addGroup('Декорации',decoArr);
-  if(selectedTile)document.getElementById('selected-meta').textContent=`Исп: ${tileCounts[selectedTile.name]||0}`;
-  if(selectedDeco)document.getElementById('selected-meta').textContent=`Исп: ${decoCounts[selectedDeco.name]||0}`;
+  addGroup(t('groupTiles'),tileArr);
+  addGroup(t('groupDecos'),decoArr);
+  if(selectedTile)document.getElementById('selected-meta').textContent=`${t('usedLabel')}${tileCounts[selectedTile.name]||0}`;
+  if(selectedDeco)document.getElementById('selected-meta').textContent=`${t('usedLabel')}${decoCounts[selectedDeco.name]||0}`;
 }
 
 
@@ -1542,16 +1646,16 @@ document.getElementById('btn-load-xml-input').addEventListener('change',e=>{
       const doc=new DOMParser().parseFromString(ev.target.result,'application/xml');
       saveHistory(); gridTiles.clear(); gridDecos.clear();
       for(const el of doc.querySelectorAll('tile')){
-        const t=tiles.find(t=>t.name===el.getAttribute('name'));
-        if(t) gridTiles.set(el.getAttribute('key'),t);
+        const tl=tiles.find(x=>x.name===el.getAttribute('name'));
+        if(tl) gridTiles.set(el.getAttribute('key'),tl);
       }
       for(const el of doc.querySelectorAll('deco')){
-        const d=decos.find(d=>d.name===el.getAttribute('name'));
+        const d=decos.find(x=>x.name===el.getAttribute('name'));
         const dc=parseInt(el.getAttribute('dc')),dr=parseInt(el.getAttribute('dr'));
         if(d&&!isNaN(dc)&&!isNaN(dr)) gridDecos.set(el.getAttribute('key'),{deco:d,dc,dr});
       }
       render(); updateCounts();
-    }catch(err){alert('Ошибка загрузки XML: '+err.message);}
+    }catch(err){alert(t('alertXmlError')+err.message);}
   };
   reader.readAsText(file); e.target.value='';
 });
@@ -1616,6 +1720,8 @@ function buildAllowedMap(){
 }
 
 window.addEventListener('resize',resizeCanvas);
+
+applyI18n();
 
 buildAllowedMap().then(a=>{
   allowedTile=a;
