@@ -321,7 +321,7 @@ const I18N = {
     hint6:'Кликните на объект в "Расходе"<br>чтобы скрыть все кроме него',
     expense:'Расход', drawMapHint:'Нарисуйте карту', selected:'Выбрано', notSelected:'Не выбрано',
     cell:'Ячейка:', object:'Объект:', tilesCount:'Плиток:', decosCount:'Декор:', zoom:'Зум:',
-    dropFiles:'ПЕРЕТАЩИ ФАЙЛЫ', dropFilesHint:'WebP плитки · PNG декорации · изображение',
+    dropFiles:'ПЕРЕТАЩИ ФАЙЛЫ', dropFilesHint:'Импорт фото карты',
     tileLabel:'Плитка 4×4', decoLabel:'Декорация 2×2', usedLabel:'Исп: ',
     empty:'Пусто', groupTiles:'Плитки', groupDecos:'Декорации',
     alertLoadImage:'Загрузите изображение!', alertLoadTiles:'Загрузите плитки!',
@@ -353,7 +353,7 @@ const I18N = {
     hint6:'Click an item in "Usage"<br>to hide all but it',
     expense:'Usage', drawMapHint:'Draw the map', selected:'Selected', notSelected:'Not selected',
     cell:'Cell:', object:'Object:', tilesCount:'Tiles:', decosCount:'Decor:', zoom:'Zoom:',
-    dropFiles:'DROP FILES', dropFilesHint:'WebP tiles · PNG decorations · image',
+    dropFiles:'DROP FILES', dropFilesHint:'Import a map photo',
     tileLabel:'Tile 4×4', decoLabel:'Decoration 2×2', usedLabel:'Used: ',
     empty:'Empty', groupTiles:'Tiles', groupDecos:'Decorations',
     alertLoadImage:'Upload an image!', alertLoadTiles:'Upload tiles!',
@@ -1700,20 +1700,21 @@ document.addEventListener('dragleave',e=>{if(!e.relatedTarget)dropOverlay.classL
 document.addEventListener('drop',async e=>{
   e.preventDefault();dropOverlay.classList.remove('show');
   const files=Array.from(e.dataTransfer.files);
-  const webp=files.filter(f=>f.name.endsWith('.webp'));
-  const png=files.filter(f=>f.name.endsWith('.png'));
-  const imgs=files.filter(f=>f.type.startsWith('image/')&&!f.name.endsWith('.webp')&&!f.name.endsWith('.png'));
-  if(webp.length){const nt=await Promise.all(webp.map(tileFromFile));addTiles(nt);}
-  if(png.length){const nd=await Promise.all(png.map(decoFromFile));addDecos(nd);}
+  const imgs=files.filter(f=>f.type.startsWith('image/'));
   if(imgs.length){
     const reader=new FileReader();
     reader.onload=ev=>{
       const img=new Image();
       img.onload=()=>{
-        sourceImage=img;document.getElementById('source-preview').style.display='block';document.getElementById('source-img').src=ev.target.result;
+        sourceImage=img;
+        document.getElementById('source-preview').style.display='block';
+        document.getElementById('source-img').src=ev.target.result;
         const b=isoBounds(),asp=img.naturalWidth/img.naturalHeight;
         imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
         imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';render();
+        sourceFxAlwaysOriginal=false;
+        updateSourcePreview();
+        document.getElementById('src-fx-hint').style.display='block';
       };img.src=ev.target.result;
     };reader.readAsDataURL(imgs[0]);
   }
