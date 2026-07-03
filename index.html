@@ -88,7 +88,7 @@
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
   ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
   #lang-toggle{display:flex;align-items:center;gap:6px;}
-  #lang-toggle .flag{font-size:14px;line-height:1;}
+  #lang-toggle .flag{font-size:14px;line-height:1;font-family:"Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji",sans-serif;}
 </style>
 </head>
 <body>
@@ -96,7 +96,7 @@
   <h1>🍪 CRK Map Art Planner</h1>
   <span style="color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;">256×240 · iso</span>
   <button class="tool-btn" id="lang-toggle" title="Switch language / Сменить язык" style="font-size:11px;padding:3px 9px;">
-    <span class="flag" id="lang-flag">🇷🇺</span><span id="lang-label">RU</span>
+    <span class="flag" id="lang-flag" style="display:inline-flex;vertical-align:-2px;"></span><span id="lang-label">RU</span>
   </button>
   <div style="margin-left:auto;display:flex;gap:7px;align-items:center;">
     <button class="tool-btn" id="btn-hide-decos" title="Скрыть/показать декорации" style="font-size:11px;padding:3px 9px;height:26px;display:inline-flex;align-items:center;line-height:1;" data-i18n="hideDecos">🌸 Скрыть декорации</button>
@@ -364,6 +364,9 @@ const I18N = {
 let LANG = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en';
 function t(key){ return (I18N[LANG] && I18N[LANG][key]) !== undefined ? I18N[LANG][key] : key; }
 
+const FLAG_RU = '<svg width="16" height="11" viewBox="0 0 16 11" xmlns="http://www.w3.org/2000/svg" style="border-radius:2px;display:block;"><rect width="16" height="11" fill="#fff"/><rect y="3.667" width="16" height="3.667" fill="#0039A6"/><rect y="7.333" width="16" height="3.667" fill="#D52B1E"/></svg>';
+const FLAG_US = '<svg width="16" height="11" viewBox="0 0 16 11" xmlns="http://www.w3.org/2000/svg" style="border-radius:2px;display:block;"><rect width="16" height="11" fill="#fff"/><g fill="#B22234"><rect y="0" width="16" height="0.846"/><rect y="1.692" width="16" height="0.846"/><rect y="3.385" width="16" height="0.846"/><rect y="5.077" width="16" height="0.846"/><rect y="6.769" width="16" height="0.846"/><rect y="8.462" width="16" height="0.846"/><rect y="10.154" width="16" height="0.846"/></g><rect width="6.4" height="5.923" fill="#3C3B6E"/></svg>';
+
 function applyI18n(){
   document.documentElement.lang = LANG;
   document.querySelectorAll('[data-i18n]').forEach(el=>{
@@ -372,7 +375,7 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{
     el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
   });
-  document.getElementById('lang-flag').textContent = LANG==='ru' ? '🇷🇺' : '🇺🇸';
+  document.getElementById('lang-flag').innerHTML = LANG==='ru' ? FLAG_RU : FLAG_US;
   document.getElementById('lang-label').textContent = LANG==='ru' ? 'RU' : 'EN';
   document.getElementById('lang-toggle').title = t('langSwitchTitle');
   document.getElementById('btn-hide-decos').textContent = decosVisible ? t('hideDecos') : t('showDecos');
