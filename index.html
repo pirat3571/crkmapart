@@ -9,14 +9,15 @@
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
   :root{--bg:#0d0f14;--bg2:#161921;--bg3:#1e2230;--accent:#f4a83a;--accent2:#e87d2a;--text:#e8e4d9;--muted:#7a7d8a;--border:#2a2e3d;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  body,input,button,select,textarea,label{font-weight:700;}
   header{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:10;}
   header h1{font-size:18px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
   .main{display:flex;flex:1;overflow:hidden;}
   .sidebar{width:270px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;z-index:5;}
   .sidebar-section{padding:10px 12px;border-bottom:1px solid var(--border);}
   .sidebar-section h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:700;}
-  .upload-btn{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px dashed var(--border);border-radius:5px;padding:7px 9px;cursor:pointer;width:100%;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;transition:border-color .2s,background .2s;text-align:left;}
+  .upload-btn{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px dashed var(--border);border-radius:5px;padding:7px 9px;cursor:pointer;width:100%;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;transition:border-color .2s,background .2s;text-align:left;}
   .upload-btn:hover{border-color:var(--accent);background:rgba(244,168,58,.06);}
   .upload-btn .icon{font-size:15px;color:var(--accent);flex-shrink:0;}
   .upload-btn .hint{font-size:10px;color:var(--muted);margin-top:1px;display:block;}
@@ -97,13 +98,13 @@
     <span class="flag" id="lang-flag">🇷🇺</span><span id="lang-label">RU</span>
   </button>
   <div style="margin-left:auto;display:flex;gap:7px;align-items:center;">
-    <button class="tool-btn" id="btn-hide-decos" title="Скрыть/показать декорации" style="font-size:11px;padding:3px 9px;" data-i18n="hideDecos">🌸 Скрыть декорации</button>
+    <button class="tool-btn" id="btn-hide-decos" title="Скрыть/показать декорации" style="font-size:11px;padding:3px 9px;height:26px;display:inline-flex;align-items:center;line-height:1;" data-i18n="hideDecos">🌸 Скрыть декорации</button>
     <button class="tool-btn" id="btn-undo" disabled title="Ctrl+Z" style="font-size:14px;padding:3px 9px;">↩</button>
     <button class="tool-btn" id="btn-redo" disabled title="Ctrl+Y" style="font-size:14px;padding:3px 9px;">↪</button>
     <button class="tool-btn" id="btn-grid" style="font-size:12px;padding:3px 9px;" data-i18n="gridOff">⊟ Выкл</button>
     <input type="file" id="btn-load-xml-input" accept=".xml" style="display:none;">
     <div style="position:relative;" id="io-menu-wrap">
-      <button class="tool-btn" id="btn-io-toggle" style="font-size:11px;padding:3px 9px;" data-i18n="ioToggle">Импорт/Экспорт ▾</button>
+      <button class="tool-btn" id="btn-io-toggle" style="font-size:11px;padding:3px 9px;height:26px;display:inline-flex;align-items:center;line-height:1;" data-i18n="ioToggle">Импорт/Экспорт ▾</button>
       <div id="io-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:6px;min-width:155px;z-index:50;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4);">
         <button class="io-item" id="export-btn" data-i18n="exportPng">💾 PNG</button>
         <button class="io-item" id="btn-save-xml" data-i18n="exportXml">💾 XML</button>
@@ -382,7 +383,12 @@ function applyI18n(){
   if(typeof renderPalette==='function') renderPalette();
   if(typeof renderDecoGrid==='function') renderDecoGrid();
   if(typeof updateCounts==='function') updateCounts();
-  if(typeof selectedTile!=='undefined' && selectedTile) document.getElementById('selected-meta').textContent = document.getElementById('selected-meta').textContent; // meta refreshed by selectTile/updateCounts
+  // Force-refresh the "Выбрано/Selected" meta label so it never stays in the old language
+  if(selectedTile){
+    document.getElementById('selected-meta').textContent = `${t('usedLabel')}${countTileUses(selectedTile.name)}`;
+  } else if(selectedDeco){
+    document.getElementById('selected-meta').textContent = `${t('usedLabel')}${countDecoUses(selectedDeco.name)}`;
+  }
 }
 
 document.getElementById('lang-toggle').addEventListener('click', ()=>{
@@ -1532,6 +1538,16 @@ document.getElementById('fx-reset-btn').addEventListener('click',()=>{
 });
 
 // ─── COUNTS ────────────────────────────────────────────────────────────────
+function countTileUses(name){
+  let n=0;
+  for(const v of gridTiles.values()) if(v.name===name) n++;
+  return n;
+}
+function countDecoUses(name){
+  let n=0;
+  for(const v of gridDecos.values()) if(v.deco.name===name) n++;
+  return n;
+}
 function updateCounts(){
   let totalT=0,free=0;
   const tileCounts={};
