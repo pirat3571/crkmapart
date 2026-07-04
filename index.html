@@ -514,6 +514,7 @@ function updateUndoButtons(){ document.getElementById('btn-undo').disabled=!undo
 let imgOvX=0,imgOvY=0,imgOvW=0,imgOvH=0,imgOvVisible=false,imgOvOpacity=.45,imgOvRot=0;
 let isDraggingImg=false,imgDragIsoStart={ix:0,iy:0},imgDragOvStart={x:0,y:0};
 let resizingHandle=-1,resizeIsoStart=null,resizeRectStart=null;
+let resizeAnchorLocal=null,resizeAnchorWorld=null;
 let isRotatingImg=false,rotateStartAngle=0,rotateStartRot=0;
 
 // Convert an iso-space point into the image overlay's LOCAL (unrotated) space,
@@ -987,7 +988,17 @@ canvasArea.addEventListener('mousedown',e=>{
       return;
     }
     const h=imgHandleAt(sx,sy);
-    if(h!==-1){resizingHandle=h;resizeIsoStart=screenToIso(sx,sy);resizeRectStart={x:imgOvX,y:imgOvY,w:imgOvW,h:imgOvH};canvasArea.style.cursor='nwse-resize';return;}
+    if(h!==-1){
+      resizingHandle=h;resizeIsoStart=screenToIso(sx,sy);resizeRectStart={x:imgOvX,y:imgOvY,w:imgOvW,h:imgOvH};
+      // The corner OPPOSITE the one being dragged must stay put on screen. Its
+      // LOCAL coordinate is fixed by construction, but under rotation its WORLD
+      // position depends on the (moving) rect centre — so we pin its WORLD
+      // position explicitly here and rebuild the rect around that each frame.
+      const{x,y,w,h:hh}=resizeRectStart;
+      resizeAnchorLocal = h===0?{x:x+w,y:y+hh} : h===1?{x:x,y:y+hh} : h===2?{x:x+w,y:y} : {x:x,y:y};
+      resizeAnchorWorld = imgToWorld(resizeAnchorLocal.x, resizeAnchorLocal.y);
+      canvasArea.style.cursor='nwse-resize';return;
+    }
     if(imgBodyHit(sx,sy)){isDraggingImg=true;imgDragIsoStart=screenToIso(sx,sy);imgDragOvStart={x:imgOvX,y:imgOvY};canvasArea.style.cursor='grabbing';return;}
   }
   isMouseDown=true;
@@ -1010,24 +1021,30 @@ document.addEventListener('mousemove',e=>{
   if(isDraggingImg){const iso=screenToIso(sx,sy);imgOvX=imgDragOvStart.x+(iso.ix-imgDragIsoStart.ix);imgOvY=imgDragOvStart.y+(iso.iy-imgDragIsoStart.iy);render();return;}
   if(resizingHandle!==-1){
     const iso=screenToIso(sx,sy);
-    // Resize math must happen in the LOCAL (unrotated) frame of the rect as it
-    // was when the drag started — using a fixed centre avoids feedback from
-    // imgOvX/Y/W/H changing every frame while dragging.
+    // Un-rotate the anchor→mouse vector into the rectangle's own (local) axes,
+    // so the dragged corner's LOCAL position can be computed directly.
     const rad=-imgOvRot*Math.PI/180;
-    const scx=resizeRectStart.x+resizeRectStart.w/2, scy=resizeRectStart.y+resizeRectStart.h/2;
-    const toLocalFixed=(px,py)=>{
-      const ddx=px-scx, ddy=py-scy;
-      return { lx: ddx*Math.cos(rad)-ddy*Math.sin(rad)+scx, ly: ddx*Math.sin(rad)+ddy*Math.cos(rad)+scy };
-    };
-    const startL=toLocalFixed(resizeIsoStart.ix,resizeIsoStart.iy);
-    const curL=toLocalFixed(iso.ix,iso.iy);
-    const dx=curL.lx-startL.lx, dy=curL.ly-startL.ly;
-    let{x,y,w,h}=resizeRectStart;
-    if(resizingHandle===0){x+=dx;y+=dy;w-=dx;h-=dy;}
-    if(resizingHandle===1){y+=dy;w+=dx;h-=dy;}
-    if(resizingHandle===2){x+=dx;w-=dx;h+=dy;}
-    if(resizingHandle===3){w+=dx;h+=dy;}
-    if(w>10&&h>10){imgOvX=x;imgOvY=y;imgOvW=w;imgOvH=h;}
+    const avx=iso.ix-resizeAnchorWorld.wx, avy=iso.iy-resizeAnchorWorld.wy;
+    const localVec={ x: avx*Math.cos(rad)-avy*Math.sin(rad), y: avx*Math.sin(rad)+avy*Math.cos(rad) };
+    const A=resizeAnchorLocal;
+    const D={ x:A.x+localVec.x, y:A.y+localVec.y };
+    let x,y,w,h;
+    if(resizingHandle===0){ x=D.x; y=D.y; w=A.x-D.x; h=A.y-D.y; }
+    if(resizingHandle===1){ x=A.x; y=D.y; w=D.x-A.x; h=A.y-D.y; }
+    if(resizingHandle===2){ x=D.x; y=A.y; w=A.x-D.x; h=D.y-A.y; }
+    if(resizingHandle===3){ x=A.x; y=A.y; w=D.x-A.x; h=D.y-A.y; }
+    if(w>10&&h>10){
+      imgOvX=x;imgOvY=y;imgOvW=w;imgOvH=h;
+      // Resizing changes the rect's centre, and since rotation happens around the
+      // centre, the anchor corner's LOCAL coordinate staying fixed does NOT mean
+      // its WORLD position stays fixed once rotated — it drifts. Correct for this
+      // by measuring where the anchor actually landed and nudging x/y to cancel
+      // the error, which pins it back exactly (translation shifts world position
+      // uniformly, so this doesn't affect the size we just computed).
+      const anchorWorldNow=imgToWorld(A.x,A.y);
+      imgOvX += resizeAnchorWorld.wx-anchorWorldNow.wx;
+      imgOvY += resizeAnchorWorld.wy-anchorWorldNow.wy;
+    }
     render();return;
   }
 
