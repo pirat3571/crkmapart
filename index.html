@@ -511,9 +511,54 @@ function redo(){ if(!redoStack.length)return; undoStack.push(snapshot()); const 
 function updateUndoButtons(){ document.getElementById('btn-undo').disabled=!undoStack.length; document.getElementById('btn-redo').disabled=!redoStack.length; }
 
 // Image overlay (in iso-space coords)
-let imgOvX=0,imgOvY=0,imgOvW=0,imgOvH=0,imgOvVisible=false,imgOvOpacity=.45;
+let imgOvX=0,imgOvY=0,imgOvW=0,imgOvH=0,imgOvVisible=false,imgOvOpacity=.45,imgOvRot=0;
 let isDraggingImg=false,imgDragIsoStart={ix:0,iy:0},imgDragOvStart={x:0,y:0};
 let resizingHandle=-1,resizeIsoStart=null,resizeRectStart=null;
+let isRotatingImg=false,rotateStartAngle=0,rotateStartRot=0;
+
+// Convert an iso-space point into the image overlay's LOCAL (unrotated) space,
+// i.e. "undo" the imgOvRot rotation around the overlay's centre. Used for hit-testing
+// and resize math so the rectangle math can stay axis-aligned regardless of rotation.
+function imgToLocal(ix,iy){
+  const cx=imgOvX+imgOvW/2, cy=imgOvY+imgOvH/2;
+  const rad=-imgOvRot*Math.PI/180;
+  const dx=ix-cx, dy=iy-cy;
+  return { lx: dx*Math.cos(rad)-dy*Math.sin(rad)+cx, ly: dx*Math.sin(rad)+dy*Math.cos(rad)+cy };
+}
+// Inverse of imgToLocal — turns a LOCAL (unrotated) point back into iso/world space.
+function imgToWorld(lx,ly){
+  const cx=imgOvX+imgOvW/2, cy=imgOvY+imgOvH/2;
+  const rad=imgOvRot*Math.PI/180;
+  const dx=lx-cx, dy=ly-cy;
+  return { wx: dx*Math.cos(rad)-dy*Math.sin(rad)+cx, wy: dx*Math.sin(rad)+dy*Math.cos(rad)+cy };
+}
+
+// ─── ROTATE HANDLE (small circle above the top edge, like Canva/Figma) ─────
+// Returns the overlay's centre in world/iso space.
+function getImgOverlayCenterWorld(){
+  return { wx: imgOvX+imgOvW/2, wy: imgOvY+imgOvH/2 };
+}
+// Returns the world/iso position of the little rotate-handle circle, kept at a
+// constant on-screen distance above the (rotated) top edge of the overlay.
+function getImgRotateHandleWorld(){
+  const c=getImgOverlayCenterWorld();
+  const topLocal={lx:imgOvX+imgOvW/2, ly:imgOvY};
+  const top=imgToWorld(topLocal.lx,topLocal.ly);
+  let dx=top.wx-c.wx, dy=top.wy-c.wy;
+  const len=Math.hypot(dx,dy)||1;
+  dx/=len; dy/=len;
+  const handleDistScreenPx=26;
+  const handleDistWorld=handleDistScreenPx/vpZoom;
+  return { wx: top.wx+dx*handleDistWorld, wy: top.wy+dy*handleDistWorld, topWx:top.wx, topWy:top.wy };
+}
+// Is (sx,sy) (screen coords) over the rotate handle?
+function imgRotateHandleAt(sx,sy){
+  if(!imgOvVisible||!sourceImage)return false;
+  const{ix,iy}=screenToIso(sx,sy);
+  const h=getImgRotateHandleWorld();
+  const hitR=10/vpZoom;
+  return Math.hypot(ix-h.wx, iy-h.wy)<hitR;
+}
 
 // Viewport
 let vpX=0,vpY=0,vpZoom=1;
@@ -708,18 +753,40 @@ function render(){
     }
   }
 
-  // Image overlay
+  // Image overlay (rotated around its own centre by imgOvRot degrees)
   if(imgOvVisible&&sourceImage){
+    const cx=imgOvX+imgOvW/2, cy=imgOvY+imgOvH/2;
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(imgOvRot*Math.PI/180);
     ctx.globalAlpha=imgOvOpacity;
-    ctx.drawImage(sourceImage,imgOvX,imgOvY,imgOvW,imgOvH);
+    ctx.drawImage(sourceImage,-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
     ctx.globalAlpha=1;
     ctx.strokeStyle='#f4a83a'; ctx.lineWidth=2/vpZoom;
     ctx.setLineDash([6/vpZoom,3/vpZoom]);
-    ctx.strokeRect(imgOvX,imgOvY,imgOvW,imgOvH);
+    ctx.strokeRect(-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
     ctx.setLineDash([]);
+    ctx.restore();
+    // Handle squares are drawn axis-aligned in world space (after un-rotating),
+    // computed from the LOCAL (unrotated) corners via imgToWorld.
     const hs=7/vpZoom; ctx.fillStyle='#f4a83a';
-    for(const[hx,hy]of[[imgOvX,imgOvY],[imgOvX+imgOvW,imgOvY],[imgOvX,imgOvY+imgOvH],[imgOvX+imgOvW,imgOvY+imgOvH]])
-      ctx.fillRect(hx-hs/2,hy-hs/2,hs,hs);
+    for(const[lx,ly]of[[imgOvX,imgOvY],[imgOvX+imgOvW,imgOvY],[imgOvX,imgOvY+imgOvH],[imgOvX+imgOvW,imgOvY+imgOvH]]){
+      const{wx,wy}=imgToWorld(lx,ly);
+      ctx.fillRect(wx-hs/2,wy-hs/2,hs,hs);
+    }
+    // Rotate handle: small circle with a rotate icon, connected to the top
+    // edge by a short line — stays a constant size/distance on screen.
+    const rh=getImgRotateHandleWorld();
+    ctx.strokeStyle='#f4a83a'; ctx.lineWidth=1.5/vpZoom;
+    ctx.beginPath(); ctx.moveTo(rh.topWx,rh.topWy); ctx.lineTo(rh.wx,rh.wy); ctx.stroke();
+    const rr=8/vpZoom;
+    ctx.beginPath(); ctx.arc(rh.wx,rh.wy,rr,0,Math.PI*2);
+    ctx.fillStyle='#1e2230'; ctx.fill();
+    ctx.strokeStyle='#f4a83a'; ctx.lineWidth=1.5/vpZoom; ctx.stroke();
+    ctx.fillStyle='#f4a83a';
+    ctx.font=`${11/vpZoom}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('↻', rh.wx, rh.wy);
   }
 
   ctx.restore();
@@ -846,15 +913,17 @@ function hideGhost(){ ghostCanvas.style.display='none'; }
 function imgHandleAt(sx,sy){
   if(!imgOvVisible||!sourceImage)return -1;
   const{ix,iy}=screenToIso(sx,sy);
+  const{lx,ly}=imgToLocal(ix,iy);
   const hs=10/vpZoom;
   const c=[[imgOvX,imgOvY],[imgOvX+imgOvW,imgOvY],[imgOvX,imgOvY+imgOvH],[imgOvX+imgOvW,imgOvY+imgOvH]];
-  for(let i=0;i<4;i++) if(Math.abs(ix-c[i][0])<hs&&Math.abs(iy-c[i][1])<hs)return i;
+  for(let i=0;i<4;i++) if(Math.abs(lx-c[i][0])<hs&&Math.abs(ly-c[i][1])<hs)return i;
   return -1;
 }
 function imgBodyHit(sx,sy){
   if(!imgOvVisible||!sourceImage)return false;
   const{ix,iy}=screenToIso(sx,sy);
-  return ix>=imgOvX&&ix<=imgOvX+imgOvW&&iy>=imgOvY&&iy<=imgOvY+imgOvH;
+  const{lx,ly}=imgToLocal(ix,iy);
+  return lx>=imgOvX&&lx<=imgOvX+imgOvW&&ly>=imgOvY&&ly<=imgOvY+imgOvH;
 }
 
 // ─── EVENTS ────────────────────────────────────────────────────────────────
@@ -908,6 +977,15 @@ canvasArea.addEventListener('mousedown',e=>{
   const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
   if(spaceDown){isPanning=true;panStart={cx:e.clientX,cy:e.clientY,vx:vpX,vy:vpY};canvasArea.style.cursor='grabbing';return;}
   if(imgOvVisible&&sourceImage){
+    if(imgRotateHandleAt(sx,sy)){
+      isRotatingImg=true;
+      const{ix,iy}=screenToIso(sx,sy);
+      const c=getImgOverlayCenterWorld();
+      rotateStartAngle=Math.atan2(iy-c.wy, ix-c.wx)*180/Math.PI;
+      rotateStartRot=imgOvRot;
+      canvasArea.style.cursor='grabbing';
+      return;
+    }
     const h=imgHandleAt(sx,sy);
     if(h!==-1){resizingHandle=h;resizeIsoStart=screenToIso(sx,sy);resizeRectStart={x:imgOvX,y:imgOvY,w:imgOvW,h:imgOvH};canvasArea.style.cursor='nwse-resize';return;}
     if(imgBodyHit(sx,sy)){isDraggingImg=true;imgDragIsoStart=screenToIso(sx,sy);imgDragOvStart={x:imgOvX,y:imgOvY};canvasArea.style.cursor='grabbing';return;}
@@ -921,10 +999,29 @@ document.addEventListener('mousemove',e=>{
   const rect=canvasArea.getBoundingClientRect();
   const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
   if(isPanning){vpX=panStart.vx+(e.clientX-panStart.cx);vpY=panStart.vy+(e.clientY-panStart.cy);render();return;}
+  if(isRotatingImg){
+    const{ix,iy}=screenToIso(sx,sy);
+    const c=getImgOverlayCenterWorld();
+    const curAngle=Math.atan2(iy-c.wy, ix-c.wx)*180/Math.PI;
+    const delta=curAngle-rotateStartAngle;
+    setImgRotation(rotateStartRot+delta);
+    return;
+  }
   if(isDraggingImg){const iso=screenToIso(sx,sy);imgOvX=imgDragOvStart.x+(iso.ix-imgDragIsoStart.ix);imgOvY=imgDragOvStart.y+(iso.iy-imgDragIsoStart.iy);render();return;}
   if(resizingHandle!==-1){
     const iso=screenToIso(sx,sy);
-    const dx=iso.ix-resizeIsoStart.ix,dy=iso.iy-resizeIsoStart.iy;
+    // Resize math must happen in the LOCAL (unrotated) frame of the rect as it
+    // was when the drag started — using a fixed centre avoids feedback from
+    // imgOvX/Y/W/H changing every frame while dragging.
+    const rad=-imgOvRot*Math.PI/180;
+    const scx=resizeRectStart.x+resizeRectStart.w/2, scy=resizeRectStart.y+resizeRectStart.h/2;
+    const toLocalFixed=(px,py)=>{
+      const ddx=px-scx, ddy=py-scy;
+      return { lx: ddx*Math.cos(rad)-ddy*Math.sin(rad)+scx, ly: ddx*Math.sin(rad)+ddy*Math.cos(rad)+scy };
+    };
+    const startL=toLocalFixed(resizeIsoStart.ix,resizeIsoStart.iy);
+    const curL=toLocalFixed(iso.ix,iso.iy);
+    const dx=curL.lx-startL.lx, dy=curL.ly-startL.ly;
     let{x,y,w,h}=resizeRectStart;
     if(resizingHandle===0){x+=dx;y+=dy;w-=dx;h-=dy;}
     if(resizingHandle===1){y+=dy;w+=dx;h-=dy;}
@@ -936,6 +1033,7 @@ document.addEventListener('mousemove',e=>{
 
   // Cursor hint
   if(imgOvVisible&&sourceImage){
+    if(imgRotateHandleAt(sx,sy)){canvasArea.style.cursor='grab';hideGhost();return;}
     if(imgHandleAt(sx,sy)!==-1){canvasArea.style.cursor='nwse-resize';hideGhost();return;}
     if(imgBodyHit(sx,sy)){canvasArea.style.cursor='grab';hideGhost();return;}
   }
@@ -972,7 +1070,7 @@ document.addEventListener('mousemove',e=>{
 });
 
 document.addEventListener('mouseup',()=>{
-  isPanning=false;isDraggingImg=false;resizingHandle=-1;isMouseDown=false;
+  isPanning=false;isDraggingImg=false;resizingHandle=-1;isMouseDown=false;isRotatingImg=false;
   canvasArea.style.cursor='crosshair';
 });
 canvasArea.addEventListener('mouseleave',()=>{document.getElementById('tooltip').style.opacity='0';hideGhost();});
@@ -1147,7 +1245,9 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       document.getElementById('source-img').src=ev.target.result;
       const b=isoBounds(),asp=img.naturalWidth/img.naturalHeight;
       imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
-      imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';render();
+      imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
+      setImgRotation(0);
+      render();
       sourceFxAlwaysOriginal=false;
       updateSourcePreview();
       document.getElementById('src-fx-hint').style.display='block';
@@ -1157,6 +1257,11 @@ document.getElementById('img-upload').addEventListener('change',e=>{
 document.getElementById('tiles-upload').addEventListener('change',async e=>{const nt=await Promise.all(Array.from(e.target.files).map(tileFromFile));addTiles(nt);});
 document.getElementById('decos-upload').addEventListener('change',async e=>{const nd=await Promise.all(Array.from(e.target.files).map(decoFromFile));addDecos(nd);});
 document.getElementById('img-opacity').addEventListener('input',e=>{imgOvOpacity=parseInt(e.target.value)/100;render();});
+function setImgRotation(deg){
+  deg=((deg%360)+360)%360;
+  imgOvRot=deg;
+  render();
+}
 document.getElementById('img-fit-btn').addEventListener('click',()=>{
   if(!sourceImage)return;
   const b=isoBounds(),asp=sourceImage.naturalWidth/sourceImage.naturalHeight;
@@ -1253,7 +1358,8 @@ function sampleImageGrid(){
     const sc=tc*TILE,sr=tr*TILE;
     const{sx,sy}=isoXY(sc,sr);
     const cx=sx+TW_ISO/2,cy=sy+TH_ISO/2;
-    const uN=(cx-imgOvX)/imgOvW,vN=(cy-imgOvY)/imgOvH;
+    const{lx,ly}=imgToLocal(cx,cy);
+    const uN=(lx-imgOvX)/imgOvW,vN=(ly-imgOvY)/imgOvH;
     if(uN<0||uN>1||vN<0||vN>1)continue;
     const c=sampleAvg(uN,vN,radius);
     if(c) rawTileSamples.push({tc,tr,r:c.r,g:c.g,b:c.b});
@@ -1267,7 +1373,8 @@ function sampleImageGrid(){
       const sc=dc-DECO_OFF_L, sr=dr-DECO_OFF_T;
       const{sx,sy}=isoXY(sc,sr);
       const cx=sx+DECO_VW/2, cy=sy+DECO_VH/2;
-      const uN=(cx-imgOvX)/imgOvW,vN=(cy-imgOvY)/imgOvH;
+      const{lx,ly}=imgToLocal(cx,cy);
+      const uN=(lx-imgOvX)/imgOvW,vN=(ly-imgOvY)/imgOvH;
       if(uN<0||uN>1||vN<0||vN>1)continue;
       const c=sampleAvg(uN,vN,radD);
       if(c) rawDecoSamples.push({dc,dr,r:c.r,g:c.g,b:c.b});
@@ -1711,7 +1818,9 @@ document.addEventListener('drop',async e=>{
         document.getElementById('source-img').src=ev.target.result;
         const b=isoBounds(),asp=img.naturalWidth/img.naturalHeight;
         imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
-        imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';render();
+        imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
+        setImgRotation(0);
+        render();
         sourceFxAlwaysOriginal=false;
         updateSourcePreview();
         document.getElementById('src-fx-hint').style.display='block';
