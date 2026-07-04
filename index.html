@@ -512,9 +512,10 @@ function updateUndoButtons(){ document.getElementById('btn-undo').disabled=!undo
 
 // Image overlay (in iso-space coords)
 let imgOvX=0,imgOvY=0,imgOvW=0,imgOvH=0,imgOvVisible=false,imgOvOpacity=.45,imgOvRot=0;
+let imgFlipH=false,imgFlipV=false; // horizontal/vertical mirror, toggled when a resize handle is dragged past the opposite anchor
 let isDraggingImg=false,imgDragIsoStart={ix:0,iy:0},imgDragOvStart={x:0,y:0};
 let resizingHandle=-1,resizeIsoStart=null,resizeRectStart=null;
-let resizeAnchorLocal=null,resizeAnchorWorld=null;
+let resizeAnchorLocal=null,resizeAnchorWorld=null,resizeFlipHStart=false,resizeFlipVStart=false;
 let isRotatingImg=false,rotateStartAngle=0,rotateStartRot=0;
 
 // Convert an iso-space point into the image overlay's LOCAL (unrotated) space,
@@ -754,12 +755,13 @@ function render(){
     }
   }
 
-  // Image overlay (rotated around its own centre by imgOvRot degrees)
+  // Image overlay (rotated around its own centre by imgOvRot degrees, mirrored per imgFlipH/imgFlipV)
   if(imgOvVisible&&sourceImage){
     const cx=imgOvX+imgOvW/2, cy=imgOvY+imgOvH/2;
     ctx.save();
     ctx.translate(cx,cy);
     ctx.rotate(imgOvRot*Math.PI/180);
+    ctx.scale(imgFlipH?-1:1, imgFlipV?-1:1);
     ctx.globalAlpha=imgOvOpacity;
     ctx.drawImage(sourceImage,-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
     ctx.globalAlpha=1;
@@ -924,7 +926,9 @@ function imgBodyHit(sx,sy){
   if(!imgOvVisible||!sourceImage)return false;
   const{ix,iy}=screenToIso(sx,sy);
   const{lx,ly}=imgToLocal(ix,iy);
-  return lx>=imgOvX&&lx<=imgOvX+imgOvW&&ly>=imgOvY&&ly<=imgOvY+imgOvH;
+  const x0=Math.min(imgOvX,imgOvX+imgOvW), x1=Math.max(imgOvX,imgOvX+imgOvW);
+  const y0=Math.min(imgOvY,imgOvY+imgOvH), y1=Math.max(imgOvY,imgOvY+imgOvH);
+  return lx>=x0&&lx<=x1&&ly>=y0&&ly<=y1;
 }
 
 // ─── EVENTS ────────────────────────────────────────────────────────────────
@@ -997,6 +1001,7 @@ canvasArea.addEventListener('mousedown',e=>{
       const{x,y,w,h:hh}=resizeRectStart;
       resizeAnchorLocal = h===0?{x:x+w,y:y+hh} : h===1?{x:x,y:y+hh} : h===2?{x:x+w,y:y} : {x:x,y:y};
       resizeAnchorWorld = imgToWorld(resizeAnchorLocal.x, resizeAnchorLocal.y);
+      resizeFlipHStart = imgFlipH; resizeFlipVStart = imgFlipV;
       canvasArea.style.cursor='nwse-resize';return;
     }
     if(imgBodyHit(sx,sy)){isDraggingImg=true;imgDragIsoStart=screenToIso(sx,sy);imgDragOvStart={x:imgOvX,y:imgOvY};canvasArea.style.cursor='grabbing';return;}
@@ -1033,7 +1038,7 @@ document.addEventListener('mousemove',e=>{
     if(resizingHandle===1){ x=A.x; y=D.y; w=D.x-A.x; h=A.y-D.y; }
     if(resizingHandle===2){ x=D.x; y=A.y; w=A.x-D.x; h=D.y-A.y; }
     if(resizingHandle===3){ x=A.x; y=A.y; w=D.x-A.x; h=D.y-A.y; }
-    if(w>10&&h>10){
+    if(Math.abs(w)>10&&Math.abs(h)>10){
       imgOvX=x;imgOvY=y;imgOvW=w;imgOvH=h;
       // Resizing changes the rect's centre, and since rotation happens around the
       // centre, the anchor corner's LOCAL coordinate staying fixed does NOT mean
@@ -1044,6 +1049,16 @@ document.addEventListener('mousemove',e=>{
       const anchorWorldNow=imgToWorld(A.x,A.y);
       imgOvX += resizeAnchorWorld.wx-anchorWorldNow.wx;
       imgOvY += resizeAnchorWorld.wy-anchorWorldNow.wy;
+      // Dragging a handle past the opposite anchor makes the raw width/height
+      // negative — that's a flip. mousemove fires continuously, so re-deriving
+      // the flip from the CURRENT sign each frame (XORed with whatever flip
+      // was already active when this drag started) is what stays correct —
+      // toggling on every negative frame would flip back and forth dozens of
+      // times per second and cancel itself out.
+      if(imgOvW<0){ imgOvX+=imgOvW; imgOvW=-imgOvW; }
+      if(imgOvH<0){ imgOvY+=imgOvH; imgOvH=-imgOvH; }
+      imgFlipH = resizeFlipHStart !== (w<0);
+      imgFlipV = resizeFlipVStart !== (h<0);
     }
     render();return;
   }
@@ -1263,7 +1278,7 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       const b=isoBounds(),asp=img.naturalWidth/img.naturalHeight;
       imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
       imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
-      setImgRotation(0);
+      setImgRotation(0); imgFlipH=false; imgFlipV=false;
       render();
       sourceFxAlwaysOriginal=false;
       updateSourcePreview();
@@ -1366,7 +1381,7 @@ function sampleImageGrid(){
   }
 
   const TW_ISO=SW*TILE,TH_ISO=SH*TILE;
-  const rU=(natW/imgOvW)*(TW_ISO/2),rV=(natH/imgOvH)*(TH_ISO/2);
+  const rU=Math.abs((natW/imgOvW)*(TW_ISO/2)),rV=Math.abs((natH/imgOvH)*(TH_ISO/2));
   const radius=Math.max(.5,Math.min(rU,rV));
 
   rawTileSamples=[];
@@ -1376,7 +1391,9 @@ function sampleImageGrid(){
     const{sx,sy}=isoXY(sc,sr);
     const cx=sx+TW_ISO/2,cy=sy+TH_ISO/2;
     const{lx,ly}=imgToLocal(cx,cy);
-    const uN=(lx-imgOvX)/imgOvW,vN=(ly-imgOvY)/imgOvH;
+    let uN=(lx-imgOvX)/imgOvW,vN=(ly-imgOvY)/imgOvH;
+    if(imgFlipH) uN=1-uN;
+    if(imgFlipV) vN=1-vN;
     if(uN<0||uN>1||vN<0||vN>1)continue;
     const c=sampleAvg(uN,vN,radius);
     if(c) rawTileSamples.push({tc,tr,r:c.r,g:c.g,b:c.b});
@@ -1391,7 +1408,8 @@ function sampleImageGrid(){
       const{sx,sy}=isoXY(sc,sr);
       const cx=sx+DECO_VW/2, cy=sy+DECO_VH/2;
       const{lx,ly}=imgToLocal(cx,cy);
-      const uN=(lx-imgOvX)/imgOvW,vN=(ly-imgOvY)/imgOvH;
+      const uN0=(lx-imgOvX)/imgOvW,vN0=(ly-imgOvY)/imgOvH;
+      const uN=imgFlipH?1-uN0:uN0, vN=imgFlipV?1-vN0:vN0;
       if(uN<0||uN>1||vN<0||vN>1)continue;
       const c=sampleAvg(uN,vN,radD);
       if(c) rawDecoSamples.push({dc,dr,r:c.r,g:c.g,b:c.b});
@@ -1836,7 +1854,7 @@ document.addEventListener('drop',async e=>{
         const b=isoBounds(),asp=img.naturalWidth/img.naturalHeight;
         imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
         imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
-        setImgRotation(0);
+        setImgRotation(0); imgFlipH=false; imgFlipV=false;
         render();
         sourceFxAlwaysOriginal=false;
         updateSourcePreview();
