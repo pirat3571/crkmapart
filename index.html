@@ -1332,7 +1332,7 @@ document.getElementById('tool-erase').addEventListener('click',()=>setTool('eras
 document.getElementById('tool-fill').addEventListener('click',()=>setTool('fill'));
 function setTool(t){tool=t;document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tool-'+t).classList.add('active');}
 document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm(t('confirmClearMap')))return;saveHistory();gridTiles.clear();gridDecos.clear();sessionBaseTiles=null;sessionBaseDecos=null;highlightName=null;render();updateCounts();});
-document.getElementById('clear-decos-btn').addEventListener('click',()=>{if(!gridDecos.size)return;saveHistory();gridDecos.clear();highlightName=null;render();updateCounts();});
+document.getElementById('clear-decos-btn').addEventListener('click',()=>{if(!gridDecos.size)return;saveHistory();gridDecos.clear();if(sessionBaseDecos)sessionBaseDecos=new Map();highlightName=null;render();updateCounts();});
 
 // ─── UNDO/REDO / GRID ──────────────────────────────────────────────────────
 document.getElementById('btn-undo').addEventListener('click',undo);
@@ -1951,7 +1951,12 @@ document.getElementById('deco-threshold').addEventListener('input',e=>{
   const val=parseInt(e.target.value);
   document.getElementById('deco-threshold-val').textContent=val;
   if(!lastDecoApplyData) return;
-  gridDecos.clear();
+  // Same baseline-restore-then-paint rule as reapplyImage() — a blind
+  // gridDecos.clear() here would also wipe an already-finalized, different
+  // photo's decorations, since this fast path (skipping full re-matching for
+  // performance) doesn't otherwise know about them.
+  if(sessionBaseDecos) gridDecos=new Map(sessionBaseDecos);
+  else gridDecos.clear();
   for(const pt of lastDecoApplyData){
     if(pt.best&&pt.bestD<val) gridDecos.set(`${pt.dc},${pt.dr}`,{deco:pt.best.deco,dc:pt.dc,dr:pt.dr});
   }
