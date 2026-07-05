@@ -176,6 +176,7 @@
           <span id="fx-dither-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;"></span>
         </span>
       </label>
+      <button class="fill-all-btn" id="img-adjust-btn" style="margin-top:6px;" data-i18n="adjustPosition">🔧 Изменить положение</button>
       <button class="fill-all-btn" id="fx-reset-btn" style="margin-top:6px;" data-i18n="resetFx">↺ Сбросить настройки</button>
     </div>
 
@@ -308,6 +309,7 @@ const I18N = {
     sharpen:'Резкость краёв', posterize:'Постеризация', off:'выкл',
     ditherTitle:'Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками',
     dither:'Дизеринг (сглаживание)', resetFx:'↺ Сбросить настройки',
+    adjustPosition:'🔧 Изменить положение', adjustDone:'✓ Готово', alertApplyFirst:'Сначала примените изображение!',
     tools:'Инструменты', toolDraw:'✏ Рисовать', toolErase:'✕ Ластик', toolFill:'🪣 Заливка',
     applyImage:'🎨 Применить изображение', clearMap:'🗑 Очистить карту',
     decoThreshold:'Порог цвета для декораций', less:'меньше', more:'больше',
@@ -340,6 +342,7 @@ const I18N = {
     sharpen:'Edge sharpen', posterize:'Posterize', off:'off',
     ditherTitle:'Dithering (Floyd–Steinberg) for smoother transitions between tiles',
     dither:'Dithering (smoothing)', resetFx:'↺ Reset settings',
+    adjustPosition:'🔧 Adjust position', adjustDone:'✓ Done', alertApplyFirst:'Apply the image first!',
     tools:'Tools', toolDraw:'✏ Draw', toolErase:'✕ Erase', toolFill:'🪣 Fill',
     applyImage:'🎨 Apply image', clearMap:'🗑 Clear map',
     decoThreshold:'Decoration color threshold', less:'less', more:'more',
@@ -382,6 +385,7 @@ function applyI18n(){
   document.getElementById('btn-hide-decos').textContent = decosVisible ? t('hideDecos') : t('showDecos');
   document.getElementById('btn-grid').textContent = GRID_LABELS_KEY[gridMode] ? t(GRID_LABELS_KEY[gridMode]) : t('gridOff');
   document.getElementById('img-hide-btn').textContent = imgOvVisible ? t('hideBtn') : t('showBtn');
+  document.getElementById('img-adjust-btn').textContent = imgOvPhotoHidden ? t('adjustDone') : t('adjustPosition');
   const fxPosterizeEl=document.getElementById('fx-posterize');
   document.getElementById('fx-posterize-val').textContent = fxPosterizeEl.value==='0' ? t('off') : fxPosterizeEl.value;
   // Re-render dynamic pieces that embed translated text
@@ -514,6 +518,7 @@ function updateUndoButtons(){ document.getElementById('btn-undo').disabled=!undo
 // Image overlay (in iso-space coords)
 let imgOvX=0,imgOvY=0,imgOvW=0,imgOvH=0,imgOvVisible=false,imgOvOpacity=.45,imgOvRot=0;
 let imgFlipH=false,imgFlipV=false; // horizontal/vertical mirror, toggled when a resize handle is dragged past the opposite anchor
+let imgOvPhotoHidden=false; // true while adjusting position/size/rotation AFTER "Apply image" — shows anchors only, no photo pixels
 let isDraggingImg=false,imgDragIsoStart={ix:0,iy:0},imgDragOvStart={x:0,y:0};
 let resizingHandle=-1,resizeIsoStart=null,resizeRectStart=null;
 let resizeAnchorLocal=null,resizeAnchorWorld=null,resizeFlipHStart=false,resizeFlipVStart=false;
@@ -759,18 +764,31 @@ function render(){
   // Image overlay (rotated around its own centre by imgOvRot degrees, mirrored per imgFlipH/imgFlipV)
   if(imgOvVisible&&sourceImage){
     const cx=imgOvX+imgOvW/2, cy=imgOvY+imgOvH/2;
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate(imgOvRot*Math.PI/180);
-    ctx.scale(imgFlipH?-1:1, imgFlipV?-1:1);
-    ctx.globalAlpha=imgOvOpacity;
-    ctx.drawImage(sourceImage,-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
-    ctx.globalAlpha=1;
-    ctx.strokeStyle='#f4a83a'; ctx.lineWidth=2/vpZoom;
-    ctx.setLineDash([6/vpZoom,3/vpZoom]);
-    ctx.strokeRect(-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
-    ctx.setLineDash([]);
-    ctx.restore();
+    if(!imgOvPhotoHidden){
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(imgOvRot*Math.PI/180);
+      ctx.scale(imgFlipH?-1:1, imgFlipV?-1:1);
+      ctx.globalAlpha=imgOvOpacity;
+      ctx.drawImage(sourceImage,-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
+      ctx.globalAlpha=1;
+      ctx.strokeStyle='#f4a83a'; ctx.lineWidth=2/vpZoom;
+      ctx.setLineDash([6/vpZoom,3/vpZoom]);
+      ctx.strokeRect(-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
+      ctx.setLineDash([]);
+      ctx.restore();
+    } else {
+      // Anchors-only mode (after "Apply image"): no photo pixels, just the
+      // rotated outline, so the person can still see the mapped area.
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(imgOvRot*Math.PI/180);
+      ctx.strokeStyle='#f4a83a'; ctx.lineWidth=2/vpZoom;
+      ctx.setLineDash([6/vpZoom,3/vpZoom]);
+      ctx.strokeRect(-imgOvW/2,-imgOvH/2,imgOvW,imgOvH);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
     // Handle squares are drawn axis-aligned in world space (after un-rotating),
     // computed from the LOCAL (unrotated) corners via imgToWorld.
     const hs=7/vpZoom; ctx.fillStyle='#f4a83a';
@@ -1022,9 +1040,10 @@ document.addEventListener('mousemove',e=>{
     const curAngle=Math.atan2(iy-c.wy, ix-c.wx)*180/Math.PI;
     const delta=curAngle-rotateStartAngle;
     setImgRotation(rotateStartRot+delta);
+    if(imgOvPhotoHidden) scheduleResample();
     return;
   }
-  if(isDraggingImg){const iso=screenToIso(sx,sy);imgOvX=imgDragOvStart.x+(iso.ix-imgDragIsoStart.ix);imgOvY=imgDragOvStart.y+(iso.iy-imgDragIsoStart.iy);render();return;}
+  if(isDraggingImg){const iso=screenToIso(sx,sy);imgOvX=imgDragOvStart.x+(iso.ix-imgDragIsoStart.ix);imgOvY=imgDragOvStart.y+(iso.iy-imgDragIsoStart.iy);render();if(imgOvPhotoHidden)scheduleResample();return;}
   if(resizingHandle!==-1){
     const iso=screenToIso(sx,sy);
     // Un-rotate the anchor→mouse vector into the rectangle's own (local) axes,
@@ -1061,7 +1080,9 @@ document.addEventListener('mousemove',e=>{
       imgFlipH = resizeFlipHStart !== (w<0);
       imgFlipV = resizeFlipVStart !== (h<0);
     }
-    render();return;
+    render();
+    if(imgOvPhotoHidden) scheduleResample();
+    return;
   }
 
   // Cursor hint
@@ -1280,6 +1301,8 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
       imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
       setImgRotation(0); imgFlipH=false; imgFlipV=false;
+      imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null;
+      document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
       render();
       sourceFxAlwaysOriginal=false;
       updateSourcePreview();
@@ -1360,12 +1383,26 @@ let rawDecoSamples = null;
 let tileColorsCache = null; // [{tile,r,g,b}] computed once per apply, reused by postfx
 let decoColorsCache = null; // [{deco,r,g,b}]
 
-function sampleImageGrid(){
+// Reading the full-resolution photo into a pixel buffer (drawImage+getImageData
+// below) is the expensive part of sampling — cheap once, but ruinous if redone
+// on every mousemove frame while live-dragging the anchors after Apply. The
+// pixel content only depends on sourceImage itself (not on imgOvX/Y/W/H/Rot),
+// so it's cached and reused across repositioning; only invalidated when the
+// photo itself changes (reference check below).
+let srcPixelCache=null; // {img, data, natW, natH}
+function getSourcePixelData(){
+  if(srcPixelCache && srcPixelCache.img===sourceImage) return srcPixelCache;
   const natW=sourceImage.naturalWidth,natH=sourceImage.naturalHeight;
   const oc=document.createElement('canvas');oc.width=natW;oc.height=natH;
   const octx=oc.getContext('2d');octx.imageSmoothingEnabled=true;octx.imageSmoothingQuality='high';
   octx.drawImage(sourceImage,0,0,natW,natH);
-  const imgData=octx.getImageData(0,0,natW,natH).data;
+  const data=octx.getImageData(0,0,natW,natH).data;
+  srcPixelCache={img:sourceImage,data,natW,natH};
+  return srcPixelCache;
+}
+
+function sampleImageGrid(){
+  const{data:imgData,natW,natH}=getSourcePixelData();
 
   function sampleAvg(uN,vN,rad){
     const cx=uN*natW,cy=vN*natH;
@@ -1661,6 +1698,8 @@ document.getElementById('apply-img').addEventListener('click',()=>{
   reapplyImage();
 
   imgOvVisible=false;
+  imgOvPhotoHidden=false;
+  document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
   document.getElementById('img-overlay-controls').style.display='none';
   document.getElementById('img-postfx-section').style.display='block';
 });
@@ -1712,6 +1751,31 @@ document.getElementById('fx-reset-btn').addEventListener('click',()=>{
   document.getElementById('fx-posterize').value=0; fxPosterizeVal.textContent=t('off');
   fxDitherChk.checked=false; syncDitherToggle();
   reapplyImage();
+});
+
+// ─── ADJUST POSITION AFTER APPLY ────────────────────────────────────────────
+// Re-samples + re-applies the photo at its (possibly moved/resized/rotated)
+// position in real time while dragging the anchors, coalesced to once per
+// animation frame — same reasoning as scheduleReapply() above, except this
+// also re-samples pixel positions (sampleImageGrid), not just re-runs the
+// colour post-fx (reapplyImage) on already-cached samples.
+let resampleScheduled=false;
+function scheduleResample(){
+  if(resampleScheduled)return;
+  resampleScheduled=true;
+  requestAnimationFrame(()=>{ resampleScheduled=false; sampleImageGrid(); reapplyImage(); });
+}
+document.getElementById('img-adjust-btn').addEventListener('click',()=>{
+  if(!rawTileSamples){ alert(t('alertApplyFirst')); return; }
+  imgOvPhotoHidden=!imgOvPhotoHidden;
+  imgOvVisible=imgOvPhotoHidden;
+  document.getElementById('img-adjust-btn').textContent = imgOvPhotoHidden ? t('adjustDone') : t('adjustPosition');
+  if(!imgOvPhotoHidden){
+    // Leaving adjust mode — make sure the very last position is committed,
+    // in case a click landed between animation frames.
+    sampleImageGrid(); reapplyImage();
+  }
+  render();
 });
 
 // ─── COUNTS ────────────────────────────────────────────────────────────────
@@ -1886,6 +1950,8 @@ document.addEventListener('drop',async e=>{
         imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
         imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
         setImgRotation(0); imgFlipH=false; imgFlipV=false;
+        imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null;
+        document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
         render();
         sourceFxAlwaysOriginal=false;
         updateSourcePreview();
