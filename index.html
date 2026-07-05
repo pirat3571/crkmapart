@@ -870,6 +870,18 @@ const DROWS = SROWS + DECO_OFF_T + DECO_OFF_B;
 // And hit-test: dc = round(ix/SW - iy/SH) + TILE
 
 
+// Every DIRECT manual edit (paint, erase, flood fill, right-click erase) must
+// also be mirrored into the active session baseline, not just gridTiles/
+// gridDecos. Otherwise: apply a photo, hand-paint something new, then move
+// the photo — reapplyImage() restores the baseline captured at the photo's
+// FIRST apply, which predates that hand-painted edit, silently erasing it.
+// Manual edits should always persist as "background" independent of wherever
+// the photo currently sits.
+function setTileBoth(key,tile){ gridTiles.set(key,tile); if(sessionBaseTiles) sessionBaseTiles.set(key,tile); }
+function deleteTileBoth(key){ gridTiles.delete(key); if(sessionBaseTiles) sessionBaseTiles.delete(key); }
+function setDecoBoth(key,decoObj){ gridDecos.set(key,decoObj); if(sessionBaseDecos) sessionBaseDecos.set(key,decoObj); }
+function deleteDecoBoth(key){ gridDecos.delete(key); if(sessionBaseDecos) sessionBaseDecos.delete(key); }
+
 function paintAt(screenX, screenY){
   if(activeLayer==='deco'){
   // Use the SAME (unshifted) conversion as screenToDecoUnit — see the comment
@@ -879,12 +891,12 @@ function paintAt(screenX, screenY){
   if(dc<0||dc+DECO_SPAN>DCOLS||dr<0||dr+DECO_SPAN>DROWS)return;
   if(tool==='erase'){
     for(const[k,d]of gridDecos){
-      if(dc>=d.dc&&dc<d.dc+DECO_SPAN&&dr>=d.dr&&dr<d.dr+DECO_SPAN){gridDecos.delete(k);break;}
+      if(dc>=d.dc&&dc<d.dc+DECO_SPAN&&dr>=d.dr&&dr<d.dr+DECO_SPAN){deleteDecoBoth(k);break;}
     }
   } else if(selectedDeco){
     if(!decoAllowed(dc,dr))return;
     if(decoCollides(dc,dr,null))return;
-    gridDecos.set(`${dc},${dr}`,{deco:selectedDeco,dc,dr});
+    setDecoBoth(`${dc},${dr}`,{deco:selectedDeco,dc,dr});
   }
 } else {
     // Direct tile hit-test: shift iy by TILE_VH/2 so rounding snaps to correct tile
@@ -893,9 +905,9 @@ function paintAt(screenX, screenY){
     const tc=Math.round(ix/TILE_VW - _ty/TILE_VH);
     const tr=Math.round(ix/TILE_VW + _ty/TILE_VH);
     if(tc<0||tc>=64||tr<0||tr>=60||!allowedTile[tr*64+tc])return;
-    if(tool==='erase'){ gridTiles.delete(`${tc},${tr}`); }
+    if(tool==='erase'){ deleteTileBoth(`${tc},${tr}`); }
     else if(tool==='fill'){ floodFill(tc,tr); return; }
-    else if(selectedTile){ gridTiles.set(`${tc},${tr}`,selectedTile); }
+    else if(selectedTile){ setTileBoth(`${tc},${tr}`,selectedTile); }
   }
   render(); updateCounts();
 }
@@ -931,7 +943,7 @@ function floodFill(startTc,startTr){
     const[tc,tr]=queue.shift();
     if(!allowedTile[tr*64+tc])continue;
     if((gridTiles.get(`${tc},${tr}`)||{name:null}).name!==targetName)continue;
-    gridTiles.set(`${tc},${tr}`,selectedTile);
+    setTileBoth(`${tc},${tr}`,selectedTile);
     for(const[dtc,dtr]of[[1,0],[-1,0],[0,1],[0,-1]]){
       const nc=tc+dtc,nr=tr+dtr;
       if(nc<0||nc>=64||nr<0||nr>=60)continue;
@@ -1022,14 +1034,14 @@ canvasArea.addEventListener('contextmenu',e=>{
     for(const[k,d]of gridDecos){
       if(dc>=d.dc&&dc<d.dc+DECO_SPAN&&dr>=d.dr&&dr<d.dr+DECO_SPAN){found=k;break;}
     }
-    if(found){saveHistory();gridDecos.delete(found);render();updateCounts();}
+    if(found){saveHistory();deleteDecoBoth(found);render();updateCounts();}
   } else {
     const{ix,iy}=screenToIso(sx,sy);
     const _tyR=iy-TILE_VH/2;
     const tc=Math.round(ix/TILE_VW - _tyR/TILE_VH);
     const tr=Math.round(ix/TILE_VW + _tyR/TILE_VH);
     if(tc>=0&&tc<64&&tr>=0&&tr<60&&gridTiles.has(`${tc},${tr}`)){
-      saveHistory();gridTiles.delete(`${tc},${tr}`);render();updateCounts();
+      saveHistory();deleteTileBoth(`${tc},${tr}`);render();updateCounts();
     }
   }
 });
