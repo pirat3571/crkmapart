@@ -128,7 +128,7 @@
   <canvas id="source-fx-canvas" style="width:100%;display:block;"></canvas>
   <img id="source-img" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s ease;">
 </div>
-<div id="src-fx-hint" style="display:none;font-size:9px;color:var(--muted);margin-top:3px;line-height:1.4;" data-i18n="srcFxHint">💡 Лагает? Кликни на превью чтобы отключить обработку</div>
+
       <div id="img-overlay-controls" style="display:none;margin-top:7px;">
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
           <span style="font-size:10px;color:var(--muted);width:56px;" data-i18n="opacity">Прозрачность</span>
@@ -251,7 +251,8 @@
       <span data-i18n="hint3">ЛКМ — поставить</span><br>
       <span data-i18n="hint4">ПКМ — убрать плитку/декор</span><br>
       <span data-i18n="hint5">Переключайтесь между декором<br>и плитками для работы с ними</span><br>
-      <span data-i18n="hint6">Кликните на объект в "Расходе"<br>чтобы скрыть все кроме него</span>
+      <span data-i18n="hint6">Кликните на объект в "Расходе"<br>чтобы скрыть все кроме него</span><br>
+      <span data-i18n="srcFxHint">Кликни на превью чтобы отключить обработку</span>
     </div>
   </div>
 
@@ -301,7 +302,7 @@ const I18N = {
     gridOff:'⊟ Выкл', grid2:'⊞ 2×2', grid1:'⊞ 1×1',
     ioToggle:'Импорт/Экспорт ▾', exportPng:'💾 PNG', exportXml:'💾 XML', importXml:'📁 XML (загрузить)',
     importPhoto:'Импорт фото', uploadImage:'Загрузить изображение', uploadImageHint:'PNG / JPG / WEBP',
-    srcFxHint:'💡 Лагает? Кликни на превью чтобы отключить обработку',
+    srcFxHint:'Кликни на превью чтобы отключить обработку',
     opacity:'Прозрачность', fitBtn:'⛶ Вписать', hideBtn:'👁 Скрыть', showBtn:'👁 Показать',
     imgProcessing:'Обработка изображения', brightness:'Яркость', contrast:'Контраст', saturation:'Насыщенность',
     sharpen:'Резкость краёв', posterize:'Постеризация', off:'выкл',
@@ -333,7 +334,7 @@ const I18N = {
     gridOff:'⊟ Off', grid2:'⊞ 2×2', grid1:'⊞ 1×1',
     ioToggle:'Import/Export ▾', exportPng:'💾 PNG', exportXml:'💾 XML', importXml:'📁 XML (load)',
     importPhoto:'Import photo', uploadImage:'Upload image', uploadImageHint:'PNG / JPG / WEBP',
-    srcFxHint:'💡 Lagging? Click the preview to disable processing',
+    srcFxHint:'Click the preview to disable processing',
     opacity:'Opacity', fitBtn:'⛶ Fit', hideBtn:'👁 Hide', showBtn:'👁 Show',
     imgProcessing:'Image processing', brightness:'Brightness', contrast:'Contrast', saturation:'Saturation',
     sharpen:'Edge sharpen', posterize:'Posterize', off:'off',
@@ -1282,7 +1283,6 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       render();
       sourceFxAlwaysOriginal=false;
       updateSourcePreview();
-      document.getElementById('src-fx-hint').style.display='block';
     };img.src=ev.target.result;
   };reader.readAsDataURL(file);
 });
@@ -1301,7 +1301,6 @@ document.getElementById('img-fit-btn').addEventListener('click',()=>{
 });
 document.getElementById('img-hide-btn').addEventListener('click',()=>{
   imgOvVisible=!imgOvVisible;document.getElementById('img-hide-btn').textContent=imgOvVisible?t('hideBtn'):t('showBtn');render();
-  document.getElementById('src-fx-hint').style.display=imgOvVisible?'block':'none';
 });
 
 // ─── TOOLS ─────────────────────────────────────────────────────────────────
@@ -1890,7 +1889,6 @@ document.addEventListener('drop',async e=>{
         render();
         sourceFxAlwaysOriginal=false;
         updateSourcePreview();
-        document.getElementById('src-fx-hint').style.display='block';
       };img.src=ev.target.result;
     };reader.readAsDataURL(imgs[0]);
   }
