@@ -1301,7 +1301,7 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
       imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
       setImgRotation(0); imgFlipH=false; imgFlipV=false;
-      imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null; lastAppliedTileKeys=new Set(); lastAppliedDecoKeys=new Set();
+      imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null; sessionBaseTiles=null; sessionBaseDecos=null;
       document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
       render();
       sourceFxAlwaysOriginal=false;
@@ -1331,7 +1331,7 @@ document.getElementById('tool-draw').addEventListener('click',()=>setTool('draw'
 document.getElementById('tool-erase').addEventListener('click',()=>setTool('erase'));
 document.getElementById('tool-fill').addEventListener('click',()=>setTool('fill'));
 function setTool(t){tool=t;document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tool-'+t).classList.add('active');}
-document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm(t('confirmClearMap')))return;saveHistory();gridTiles.clear();gridDecos.clear();lastAppliedTileKeys=new Set();lastAppliedDecoKeys=new Set();highlightName=null;render();updateCounts();});
+document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm(t('confirmClearMap')))return;saveHistory();gridTiles.clear();gridDecos.clear();sessionBaseTiles=null;sessionBaseDecos=null;highlightName=null;render();updateCounts();});
 document.getElementById('clear-decos-btn').addEventListener('click',()=>{if(!gridDecos.size)return;saveHistory();gridDecos.clear();highlightName=null;render();updateCounts();});
 
 // ─── UNDO/REDO / GRID ──────────────────────────────────────────────────────
@@ -1387,8 +1387,20 @@ let decoColorsCache = null; // [{deco,r,g,b}]
 // reapply (e.g. after moving/resizing it) without touching tiles/decos that
 // belong to a previously-applied, already-finalized photo or to manual
 // painting — a blind clear-everything would erase those too.
-let lastAppliedTileKeys = new Set();
-let lastAppliedDecoKeys = new Set();
+// Snapshot of gridTiles/gridDecos taken right before the CURRENT photo's
+// editing session first painted anything. Every reapply restores this
+// baseline, then paints the photo's current footprint on top — so moving the
+// photo away from a cell always reveals whatever was really there before
+// (another finalized photo, hand-painted tiles, or nothing), not a blank.
+// A plain "delete cells this photo no longer covers" approach doesn't
+// suffice: if the photo transiently passed over another photo's cells
+// mid-drag (even without the person "dropping" it there), those cells'
+// original content is gone by the time it moves away — there is nothing to
+// revert to unless a baseline was preserved. Stays fixed for the whole
+// session (not re-captured on every reapply) so it doesn't keep absorbing
+// this same photo's own prior paint as if it were background.
+let sessionBaseTiles = null;
+let sessionBaseDecos = null;
 
 // Reading the full-resolution photo into a pixel buffer (drawImage+getImageData
 // below) is the expensive part of sampling — cheap once, but ruinous if redone
@@ -1567,17 +1579,18 @@ function reapplyImage(){
     });
   }
 
-  // Tiles — paint the new set first, then remove only whatever THIS photo's
-  // previous apply painted that isn't part of the new set (e.g. after a
-  // move/resize/rotate). A blind gridTiles.clear() would also wipe tiles from
-  // an already-finalized, different photo applied earlier, or hand-painted
-  // tiles — this keeps the clear scoped to just this photo's own footprint.
-  const newTileKeys=new Set();
+  // Tiles — restore this photo's baseline (grid state from before its
+  // session started painting anything) first, then paint the current
+  // footprint on top. This is what correctly reveals another photo's
+  // original tiles when this one moves away, even if it briefly passed over
+  // them mid-drag: the baseline was never mutated by that pass, so there's
+  // always something correct to fall back to.
+  if(sessionBaseTiles) gridTiles=new Map(sessionBaseTiles);
   if(!dither){
     for(const s of tileSrc){
       const c=applyPostFX(s.r,s.g,s.b,fxp);
       const{best}=matchColor(c.r,c.g,c.b,tileColorsCache);
-      if(best){ const key=`${s.tc},${s.tr}`; gridTiles.set(key,best.tile); newTileKeys.add(key); }
+      if(best) gridTiles.set(`${s.tc},${s.tr}`,best.tile);
     }
   } else {
     // Floyd–Steinberg error diffusion across the tile raster (row-major by tc,tr)
@@ -1593,7 +1606,7 @@ function reapplyImage(){
         const c=applyPostFX(r,g,b,fxp);
         const{best}=matchColor(c.r,c.g,c.b,tileColorsCache);
         if(!best) continue;
-        gridTiles.set(key,best.tile); newTileKeys.add(key);
+        gridTiles.set(key,best.tile);
         const er=c.r-best.r, eg=c.g-best.g, eb=c.b-best.b;
         const push=(dtc,dtr,frac)=>{
           const k2=`${tc+dtc},${tr+dtr}`;
@@ -1605,25 +1618,21 @@ function reapplyImage(){
       }
     }
   }
-  for(const key of lastAppliedTileKeys){ if(!newTileKeys.has(key)) gridTiles.delete(key); }
-  lastAppliedTileKeys=newTileKeys;
 
-  // Decos — same precise-clear approach as tiles above.
+  // Decos — same baseline-restore-then-paint approach as tiles above.
   const useDecos=document.getElementById('apply-decos').checked;
   const threshold=parseInt(document.getElementById('deco-threshold').value);
-  const newDecoKeys=new Set();
+  if(sessionBaseDecos) gridDecos=new Map(sessionBaseDecos);
   if(useDecos && rawDecoSamples && decoColorsCache && decoColorsCache.length){
     const applyData=[];
     for(const s of rawDecoSamples){
       const c=applyPostFX(s.r,s.g,s.b,fxp);
       const{best,bestD}=matchColor(c.r,c.g,c.b,decoColorsCache);
       applyData.push({dc:s.dc,dr:s.dr,r:c.r,g:c.g,b:c.b,best,bestD});
-      if(best&&bestD<threshold){ const key=`${s.dc},${s.dr}`; gridDecos.set(key,{deco:best.deco,dc:s.dc,dr:s.dr}); newDecoKeys.add(key); }
+      if(best&&bestD<threshold) gridDecos.set(`${s.dc},${s.dr}`,{deco:best.deco,dc:s.dc,dr:s.dr});
     }
     lastDecoApplyData=applyData;
   }
-  for(const key of lastAppliedDecoKeys){ if(!newDecoKeys.has(key)) gridDecos.delete(key); }
-  lastAppliedDecoKeys=newDecoKeys;
 
   render(); updateCounts(); updateSourcePreview();
 }
@@ -1707,6 +1716,11 @@ document.getElementById('apply-img').addEventListener('click',()=>{
   if(!tiles.length){alert(t('alertLoadTiles'));return;}
 
   saveHistory();
+  // Capture the baseline only once per photo — on its first apply. Repeat
+  // applies (slider tweaks, or live drag/resize/rotate via "Adjust position")
+  // must reuse the SAME baseline, or it would keep absorbing this photo's own
+  // prior paint as if it were permanent background.
+  if(sessionBaseTiles===null){ sessionBaseTiles=new Map(gridTiles); sessionBaseDecos=new Map(gridDecos); }
   sampleImageGrid();
   buildColorCaches();
   reapplyImage();
@@ -1915,7 +1929,7 @@ document.getElementById('btn-load-xml-input').addEventListener('change',e=>{
   reader.onload=ev=>{
     try{
       const doc=new DOMParser().parseFromString(ev.target.result,'application/xml');
-      saveHistory(); gridTiles.clear(); gridDecos.clear(); lastAppliedTileKeys=new Set(); lastAppliedDecoKeys=new Set();
+      saveHistory(); gridTiles.clear(); gridDecos.clear(); sessionBaseTiles=null; sessionBaseDecos=null;
       for(const el of doc.querySelectorAll('tile')){
         const tl=tiles.find(x=>x.name===el.getAttribute('name'));
         if(tl) gridTiles.set(el.getAttribute('key'),tl);
@@ -1964,7 +1978,7 @@ document.addEventListener('drop',async e=>{
         imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
         imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
         setImgRotation(0); imgFlipH=false; imgFlipV=false;
-        imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null; lastAppliedTileKeys=new Set(); lastAppliedDecoKeys=new Set();
+        imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null; sessionBaseTiles=null; sessionBaseDecos=null;
         document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
         render();
         sourceFxAlwaysOriginal=false;
