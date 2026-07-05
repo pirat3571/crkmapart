@@ -509,11 +509,50 @@ let sourceFxAlwaysOriginal=false;
 // Undo/redo
 let undoStack=[], redoStack=[];
 const MAX_HISTORY=50;
-function snapshot(){ return {t:new Map(gridTiles), d:new Map(gridDecos)}; }
+// A snapshot used to only capture gridTiles/gridDecos — but reapplyImage()
+// (triggered by any later photo move or slider tweak) re-derives the grid
+// from sessionBaseTiles/rawTileSamples/etc, NOT from gridTiles/gridDecos
+// directly. Undo that only rewound the visible grid left that bookkeeping
+// stale, so the very next photo interaction would silently re-derive the
+// grid from the pre-undo state and effectively cancel the undo. Capturing
+// the full photo-session state here is what makes undo actually stick.
+function snapshot(){
+  return {
+    t:new Map(gridTiles), d:new Map(gridDecos),
+    sessionBaseTiles: sessionBaseTiles ? new Map(sessionBaseTiles) : null,
+    sessionBaseDecos: sessionBaseDecos ? new Map(sessionBaseDecos) : null,
+    rawTileSamples, rawDecoSamples, lastDecoApplyData,
+    sourceImage, imgOvX, imgOvY, imgOvW, imgOvH, imgOvRot, imgFlipH, imgFlipV,
+    imgOvVisible, imgOvPhotoHidden,
+  };
+}
 function saveHistory(){ undoStack.push(snapshot()); if(undoStack.length>MAX_HISTORY)undoStack.shift(); redoStack=[]; updateUndoButtons(); }
-function undo(){ if(!undoStack.length)return; redoStack.push(snapshot()); const s=undoStack.pop(); gridTiles=s.t; gridDecos=s.d; render(); updateCounts(); updateUndoButtons(); }
-function redo(){ if(!redoStack.length)return; undoStack.push(snapshot()); const s=redoStack.pop(); gridTiles=s.t; gridDecos=s.d; render(); updateCounts(); updateUndoButtons(); }
+function restoreSnapshot(s){
+  gridTiles=s.t; gridDecos=s.d;
+  sessionBaseTiles=s.sessionBaseTiles; sessionBaseDecos=s.sessionBaseDecos;
+  rawTileSamples=s.rawTileSamples; rawDecoSamples=s.rawDecoSamples; lastDecoApplyData=s.lastDecoApplyData;
+  sourceImage=s.sourceImage;
+  imgOvX=s.imgOvX; imgOvY=s.imgOvY; imgOvW=s.imgOvW; imgOvH=s.imgOvH; imgOvRot=s.imgOvRot;
+  imgFlipH=s.imgFlipH; imgFlipV=s.imgFlipV; imgOvVisible=s.imgOvVisible; imgOvPhotoHidden=s.imgOvPhotoHidden;
+  syncImgUiFromState();
+  render(); updateCounts(); updateUndoButtons();
+}
+function undo(){ if(!undoStack.length)return; redoStack.push(snapshot()); const s=undoStack.pop(); restoreSnapshot(s); }
+function redo(){ if(!redoStack.length)return; undoStack.push(snapshot()); const s=redoStack.pop(); restoreSnapshot(s); }
 function updateUndoButtons(){ document.getElementById('btn-undo').disabled=!undoStack.length; document.getElementById('btn-redo').disabled=!redoStack.length; }
+// Keeps the sidebar chrome (source photo preview, which panel is shown, the
+// adjust-position button label) in sync after undo/redo swaps sourceImage,
+// rawTileSamples, or imgOvPhotoHidden out from under it.
+function syncImgUiFromState(){
+  const hasPhoto = !!sourceImage;
+  document.getElementById('source-preview').style.display = hasPhoto ? 'block' : 'none';
+  if(hasPhoto) document.getElementById('source-img').src = sourceImage.src;
+  const applied = !!rawTileSamples;
+  document.getElementById('img-overlay-controls').style.display = (hasPhoto && !applied) ? 'block' : 'none';
+  document.getElementById('img-postfx-section').style.display = applied ? 'block' : 'none';
+  if(hasPhoto) document.getElementById('img-hide-btn').textContent = imgOvVisible ? t('hideBtn') : t('showBtn');
+  document.getElementById('img-adjust-btn').textContent = imgOvPhotoHidden ? t('adjustDone') : t('adjustPosition');
+}
 
 // Image overlay (in iso-space coords)
 let imgOvX=0,imgOvY=0,imgOvW=0,imgOvH=0,imgOvVisible=false,imgOvOpacity=.45,imgOvRot=0;
@@ -1002,6 +1041,7 @@ canvasArea.addEventListener('mousedown',e=>{
   if(spaceDown){isPanning=true;panStart={cx:e.clientX,cy:e.clientY,vx:vpX,vy:vpY};canvasArea.style.cursor='grabbing';return;}
   if(imgOvVisible&&sourceImage){
     if(imgRotateHandleAt(sx,sy)){
+      saveHistory();
       isRotatingImg=true;
       const{ix,iy}=screenToIso(sx,sy);
       const c=getImgOverlayCenterWorld();
@@ -1012,6 +1052,7 @@ canvasArea.addEventListener('mousedown',e=>{
     }
     const h=imgHandleAt(sx,sy);
     if(h!==-1){
+      saveHistory();
       resizingHandle=h;resizeIsoStart=screenToIso(sx,sy);resizeRectStart={x:imgOvX,y:imgOvY,w:imgOvW,h:imgOvH};
       // The corner OPPOSITE the one being dragged must stay put on screen. Its
       // LOCAL coordinate is fixed by construction, but under rotation its WORLD
@@ -1023,7 +1064,7 @@ canvasArea.addEventListener('mousedown',e=>{
       resizeFlipHStart = imgFlipH; resizeFlipVStart = imgFlipV;
       canvasArea.style.cursor='nwse-resize';return;
     }
-    if(imgBodyHit(sx,sy)){isDraggingImg=true;imgDragIsoStart=screenToIso(sx,sy);imgDragOvStart={x:imgOvX,y:imgOvY};canvasArea.style.cursor='grabbing';return;}
+    if(imgBodyHit(sx,sy)){saveHistory();isDraggingImg=true;imgDragIsoStart=screenToIso(sx,sy);imgDragOvStart={x:imgOvX,y:imgOvY};canvasArea.style.cursor='grabbing';return;}
   }
   isMouseDown=true;
   saveHistory();
