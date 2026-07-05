@@ -1301,7 +1301,7 @@ document.getElementById('img-upload').addEventListener('change',e=>{
       imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
       imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
       setImgRotation(0); imgFlipH=false; imgFlipV=false;
-      imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null;
+      imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null; lastAppliedTileKeys=new Set(); lastAppliedDecoKeys=new Set();
       document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
       render();
       sourceFxAlwaysOriginal=false;
@@ -1331,7 +1331,7 @@ document.getElementById('tool-draw').addEventListener('click',()=>setTool('draw'
 document.getElementById('tool-erase').addEventListener('click',()=>setTool('erase'));
 document.getElementById('tool-fill').addEventListener('click',()=>setTool('fill'));
 function setTool(t){tool=t;document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tool-'+t).classList.add('active');}
-document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm(t('confirmClearMap')))return;saveHistory();gridTiles.clear();gridDecos.clear();highlightName=null;render();updateCounts();});
+document.getElementById('clear-btn').addEventListener('click',()=>{if(!confirm(t('confirmClearMap')))return;saveHistory();gridTiles.clear();gridDecos.clear();lastAppliedTileKeys=new Set();lastAppliedDecoKeys=new Set();highlightName=null;render();updateCounts();});
 document.getElementById('clear-decos-btn').addEventListener('click',()=>{if(!gridDecos.size)return;saveHistory();gridDecos.clear();highlightName=null;render();updateCounts();});
 
 // ─── UNDO/REDO / GRID ──────────────────────────────────────────────────────
@@ -1382,6 +1382,13 @@ let rawTileSamples = null;
 let rawDecoSamples = null;
 let tileColorsCache = null; // [{tile,r,g,b}] computed once per apply, reused by postfx
 let decoColorsCache = null; // [{deco,r,g,b}]
+// Exactly which gridTiles/gridDecos keys the CURRENT photo's last apply/reapply
+// painted. Used to clear only this photo's own footprint on the next
+// reapply (e.g. after moving/resizing it) without touching tiles/decos that
+// belong to a previously-applied, already-finalized photo or to manual
+// painting — a blind clear-everything would erase those too.
+let lastAppliedTileKeys = new Set();
+let lastAppliedDecoKeys = new Set();
 
 // Reading the full-resolution photo into a pixel buffer (drawImage+getImageData
 // below) is the expensive part of sampling — cheap once, but ruinous if redone
@@ -1539,7 +1546,6 @@ function reapplyImage(){
   const dither=document.getElementById('fx-dither').checked;
   const fxp=getFxParams();
 
-  // Tiles
   const sharpenAmt=parseInt(document.getElementById('fx-sharpen').value);
   let tileSrc=rawTileSamples;
   if(sharpenAmt>0){
@@ -1561,11 +1567,17 @@ function reapplyImage(){
     });
   }
 
+  // Tiles — paint the new set first, then remove only whatever THIS photo's
+  // previous apply painted that isn't part of the new set (e.g. after a
+  // move/resize/rotate). A blind gridTiles.clear() would also wipe tiles from
+  // an already-finalized, different photo applied earlier, or hand-painted
+  // tiles — this keeps the clear scoped to just this photo's own footprint.
+  const newTileKeys=new Set();
   if(!dither){
     for(const s of tileSrc){
       const c=applyPostFX(s.r,s.g,s.b,fxp);
       const{best}=matchColor(c.r,c.g,c.b,tileColorsCache);
-      if(best) gridTiles.set(`${s.tc},${s.tr}`,best.tile);
+      if(best){ const key=`${s.tc},${s.tr}`; gridTiles.set(key,best.tile); newTileKeys.add(key); }
     }
   } else {
     // Floyd–Steinberg error diffusion across the tile raster (row-major by tc,tr)
@@ -1581,7 +1593,7 @@ function reapplyImage(){
         const c=applyPostFX(r,g,b,fxp);
         const{best}=matchColor(c.r,c.g,c.b,tileColorsCache);
         if(!best) continue;
-        gridTiles.set(key,best.tile);
+        gridTiles.set(key,best.tile); newTileKeys.add(key);
         const er=c.r-best.r, eg=c.g-best.g, eb=c.b-best.b;
         const push=(dtc,dtr,frac)=>{
           const k2=`${tc+dtc},${tr+dtr}`;
@@ -1593,23 +1605,25 @@ function reapplyImage(){
       }
     }
   }
+  for(const key of lastAppliedTileKeys){ if(!newTileKeys.has(key)) gridTiles.delete(key); }
+  lastAppliedTileKeys=newTileKeys;
 
-  // Decos
+  // Decos — same precise-clear approach as tiles above.
   const useDecos=document.getElementById('apply-decos').checked;
   const threshold=parseInt(document.getElementById('deco-threshold').value);
+  const newDecoKeys=new Set();
   if(useDecos && rawDecoSamples && decoColorsCache && decoColorsCache.length){
-    gridDecos.clear();
     const applyData=[];
     for(const s of rawDecoSamples){
       const c=applyPostFX(s.r,s.g,s.b,fxp);
       const{best,bestD}=matchColor(c.r,c.g,c.b,decoColorsCache);
       applyData.push({dc:s.dc,dr:s.dr,r:c.r,g:c.g,b:c.b,best,bestD});
-      if(best&&bestD<threshold) gridDecos.set(`${s.dc},${s.dr}`,{deco:best.deco,dc:s.dc,dr:s.dr});
+      if(best&&bestD<threshold){ const key=`${s.dc},${s.dr}`; gridDecos.set(key,{deco:best.deco,dc:s.dc,dr:s.dr}); newDecoKeys.add(key); }
     }
     lastDecoApplyData=applyData;
-  } else if(!useDecos){
-    gridDecos.clear();
   }
+  for(const key of lastAppliedDecoKeys){ if(!newDecoKeys.has(key)) gridDecos.delete(key); }
+  lastAppliedDecoKeys=newDecoKeys;
 
   render(); updateCounts(); updateSourcePreview();
 }
@@ -1901,7 +1915,7 @@ document.getElementById('btn-load-xml-input').addEventListener('change',e=>{
   reader.onload=ev=>{
     try{
       const doc=new DOMParser().parseFromString(ev.target.result,'application/xml');
-      saveHistory(); gridTiles.clear(); gridDecos.clear();
+      saveHistory(); gridTiles.clear(); gridDecos.clear(); lastAppliedTileKeys=new Set(); lastAppliedDecoKeys=new Set();
       for(const el of doc.querySelectorAll('tile')){
         const tl=tiles.find(x=>x.name===el.getAttribute('name'));
         if(tl) gridTiles.set(el.getAttribute('key'),tl);
@@ -1950,7 +1964,7 @@ document.addEventListener('drop',async e=>{
         imgOvW=b.w;imgOvH=b.w/asp;imgOvX=b.minX;imgOvY=b.minY+(b.h-imgOvH)/2;
         imgOvVisible=true;document.getElementById('img-overlay-controls').style.display='block';
         setImgRotation(0); imgFlipH=false; imgFlipV=false;
-        imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null;
+        imgOvPhotoHidden=false; rawTileSamples=null; rawDecoSamples=null; lastAppliedTileKeys=new Set(); lastAppliedDecoKeys=new Set();
         document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
         render();
         sourceFxAlwaysOriginal=false;
