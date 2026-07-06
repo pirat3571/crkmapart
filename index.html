@@ -74,7 +74,7 @@
   .export-btn{background:var(--accent2);border:none;border-radius:4px;padding:5px 11px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;}
   .export-btn:hover{background:var(--accent);}
   input[type="file"]{display:none;}
-  #dropzone-overlay{display:none;position:fixed;inset:0;background:rgba(13,15,20,.92);z-index:200;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--accent);letter-spacing:2px;flex-direction:column;gap:10px;}
+  #dropzone-overlay{display:none;position:fixed;inset:0;background:rgba(13,15,20,.92);z-index:200;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.3px;flex-direction:column;gap:10px;}
   #dropzone-overlay.show{display:flex;}
   .hint-overlay{position:absolute;bottom:10px;right:10px;background:rgba(22,25,33,.85);border:1px solid var(--border);border-radius:5px;padding:6px 10px;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;pointer-events:auto;line-height:1.7;}
   #hint-close{pointer-events:auto;}
@@ -291,9 +291,9 @@
 </div>
 
 <div id="dropzone-overlay">
-  <div style="font-size:36px;">🧱</div>
-  <div data-i18n="dropFiles">ПЕРЕТАЩИ ФАЙЛЫ</div>
-  <div style="font-size:11px;font-weight:400;color:var(--muted);" data-i18n="dropFilesHint">WebP плитки · PNG декорации · изображение</div>
+  <div style="font-size:36px;">🖼️</div>
+  <div data-i18n="dropFiles">Перетащите фото сюда</div>
+  <div style="font-size:11px;font-weight:400;color:var(--muted);" data-i18n="dropFilesHint">чтобы добавить его на карту</div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 
@@ -334,7 +334,7 @@ const I18N = {
     hint6:'Кликните на объект в "Расходе"<br>чтобы скрыть все кроме него',
     expense:'Расход', drawMapHint:'Нарисуйте карту', selected:'Выбрано', notSelected:'Не выбрано',
     cell:'Ячейка:', object:'Объект:', tilesCount:'Плиток:', decosCount:'Декор:', zoom:'Зум:',
-    dropFiles:'ПЕРЕТАЩИ ФАЙЛЫ', dropFilesHint:'Импорт фото карты',
+    dropFiles:'Перетащите фото сюда', dropFilesHint:'чтобы добавить его на карту',
     tileLabel:'Плитка 4×4', decoLabel:'Декорация 2×2', usedLabel:'Исп: ',
     empty:'Пусто', groupTiles:'Плитки', groupDecos:'Декорации',
     alertLoadImage:'Загрузите изображение!', alertLoadTiles:'Загрузите плитки!',
@@ -368,7 +368,7 @@ const I18N = {
     hint6:'Click an item in "Usage"<br>to hide all but it',
     expense:'Usage', drawMapHint:'Draw the map', selected:'Selected', notSelected:'Not selected',
     cell:'Cell:', object:'Object:', tilesCount:'Tiles:', decosCount:'Decor:', zoom:'Zoom:',
-    dropFiles:'DROP FILES', dropFilesHint:'Import a map photo',
+    dropFiles:'Drop your photo here', dropFilesHint:'to add it to the map',
     tileLabel:'Tile 4×4', decoLabel:'Decoration 2×2', usedLabel:'Used: ',
     empty:'Empty', groupTiles:'Tiles', groupDecos:'Decorations',
     alertLoadImage:'Upload an image!', alertLoadTiles:'Upload tiles!',
