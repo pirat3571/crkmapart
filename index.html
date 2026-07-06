@@ -6,110 +6,191 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CRK Map Art Planner</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
-  :root{--bg:#0d0f14;--bg2:#161921;--bg3:#1e2230;--accent:#f4a83a;--accent2:#e87d2a;--text:#e8e4d9;--muted:#7a7d8a;--border:#2a2e3d;}
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+  :root{
+    --bg:#0d0f14;--bg2:#141720;--bg3:#1e2230;
+    --accent:#f4a83a;--accent2:#e8823a;--accent-soft:rgba(244,168,58,.14);
+    --danger:#e8645c;--danger-soft:rgba(232,100,92,.09);
+    --text:#eae6da;--muted:#83879a;--border:#262b38;
+    --r-s:7px;--r-m:11px;
+    --font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:700;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-  body,input,button,select,textarea,label{font-weight:700;}
-  header{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:10;}
-  header h1{font-size:18px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:400;line-height:1.4;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  button,input,select,textarea{font-family:inherit;color:inherit;}
+
+  /* ── Header ─────────────────────────────────────── */
+  header{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0;z-index:10;}
+  header h1{font-size:16px;font-weight:700;color:var(--accent);letter-spacing:.2px;white-space:nowrap;}
+  .header-meta{font-size:11px;color:var(--muted);font-family:var(--font-mono);white-space:nowrap;}
+  .header-actions{margin-left:auto;display:flex;align-items:center;gap:4px;}
+  .header-group{display:flex;align-items:center;gap:4px;padding-right:10px;margin-right:6px;border-right:1px solid var(--border);}
+  .header-group:last-child{border-right:none;margin-right:0;padding-right:0;}
+
+  /* ── Layout ─────────────────────────────────────── */
   .main{display:flex;flex:1;overflow:hidden;}
-  .sidebar{width:270px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;z-index:5;}
-  .sidebar-section{padding:10px 12px;border-bottom:1px solid var(--border);}
-  .sidebar-section h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-weight:700;}
-  .upload-btn{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px dashed var(--border);border-radius:5px;padding:7px 9px;cursor:pointer;width:100%;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;transition:border-color .2s,background .2s;text-align:left;}
-  .upload-btn:hover{border-color:var(--accent);background:rgba(244,168,58,.06);}
-  .upload-btn .icon{font-size:15px;color:var(--accent);flex-shrink:0;}
-  .upload-btn .hint{font-size:10px;color:var(--muted);margin-top:1px;display:block;}
-  .source-preview{margin-top:7px;width:100%;border-radius:4px;overflow:hidden;display:none;border:1px solid var(--border);}
+  .sidebar{width:302px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;z-index:5;padding:14px;gap:12px;}
+  .sidebar-section{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-m);padding:13px;flex-shrink:0;}
+  .sidebar-section h3{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;}
+  .sec-icon{font-size:13px;line-height:1;}
+  /* Consistent internal rhythm: every direct child after the first gets the same top margin,
+     regardless of tag/class — robust even where JS forces a parent to inline display:block. */
+  .sidebar-section>*+*,details.fx-more>*+*,.img-overlay-controls>*+*{margin-top:10px;}
+
+  /* ── Field rows (label + slider + value) ───────── */
+  .field-row{display:flex;align-items:center;gap:8px;}
+  .field-label{font-size:11.5px;color:var(--muted);flex-shrink:0;}
+  .field-value{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);min-width:26px;text-align:right;flex-shrink:0;}
+  .field-row input[type=range]{flex:1;width:auto;}
+  input[type=range]{accent-color:var(--accent);height:4px;cursor:pointer;}
+
+  .btn-row{display:flex;gap:6px;}
+  .btn-row .fill-all-btn{flex:1;}
+
+  .field-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-s);padding:10px;}
+  .field-block-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .field-block input[type=range]{width:100%;}
+  .field-block-bottom{display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;color:var(--muted);opacity:.8;}
+
+  /* ── Toggle switch ──────────────────────────────── */
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-s);}
+  .toggle-row>span:first-child{font-size:11px;color:var(--muted);}
+  .switch{position:relative;display:inline-block;width:34px;height:18px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;position:absolute;}
+  .switch-track{position:absolute;inset:0;border-radius:20px;background:var(--bg2);border:1px solid var(--border);transition:background .2s,border-color .2s;}
+  .switch-thumb{position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.35);}
+
+  /* ── Upload / dropzone button ───────────────────── */
+  .upload-btn{display:flex;align-items:center;gap:9px;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--r-s);padding:9px 10px;cursor:pointer;width:100%;color:var(--text);font-size:12px;font-weight:500;transition:border-color .15s,background .15s;text-align:left;}
+  .upload-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .upload-btn .icon{font-size:15px;color:var(--accent);flex-shrink:0;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--accent-soft);border-radius:7px;}
+  .upload-btn .hint{font-size:10px;font-weight:400;color:var(--muted);margin-top:1px;display:block;}
+
+  .source-preview{width:100%;border-radius:var(--r-s);overflow:hidden;display:none;border:1px solid var(--border);position:relative;}
   .source-preview img{width:100%;display:block;}
-  .source-preview{position:relative;}
-  #source-fx-canvas{border-radius:4px;}
-  .tab-bar{display:flex;gap:2px;margin-bottom:7px;}
-  .tab-btn{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--muted);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;letter-spacing:.5px;text-transform:uppercase;}
-  .tab-btn.active{border-color:var(--accent);background:rgba(244,168,58,.12);color:var(--accent);}
+  #source-fx-canvas{border-radius:var(--r-s);width:100%;display:block;}
+  .img-overlay-controls{display:none;}
+
+  /* ── Tabs (segmented control) ───────────────────── */
+  .tab-bar{display:flex;gap:3px;background:var(--bg);border-radius:8px;padding:3px;}
+  .tab-btn{flex:1;background:transparent;border:none;border-radius:6px;padding:6px 6px;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;letter-spacing:.4px;text-transform:uppercase;}
+  .tab-btn.active{background:var(--accent-soft);color:var(--accent);}
   .tab-panel{display:none;}.tab-panel.active{display:block;}
-  .palette-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:5px;}
-  .deco-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:5px;}
-  .tile-item{position:relative;aspect-ratio:1;border-radius:3px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s,transform .15s,opacity .15s;background:var(--bg3);}
-  .tile-item:hover{transform:scale(1.08);border-color:var(--accent);}
-  .tile-item.active{border-color:var(--accent);outline:1px solid var(--accent);}
+  .rmb-hint{font-size:9.5px;color:var(--muted);margin-top:8px;}
+
+  /* ── Palette grid ────────────────────────────────── */
+  .palette-grid,.deco-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px;}
+  .tile-item{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s,transform .15s,opacity .15s;background:var(--bg);}
+  .tile-item:hover{transform:scale(1.06);border-color:var(--accent);}
+  .tile-item.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
   .tile-item.disabled{opacity:.22;filter:grayscale(1);}
-  .tile-item.disabled:hover{transform:none;border-color:#c0392b;}
+  .tile-item.disabled:hover{transform:none;border-color:var(--danger);}
   .tile-item img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;}
-  .tile-item .tile-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);font-size:7px;text-align:center;padding:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s;}
+  .tile-item .tile-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);font-size:8.5px;font-weight:500;text-align:center;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s;}
   .tile-item:hover .tile-name{opacity:1;}
-  .counts-list{list-style:none;margin-top:4px;overflow-y:auto;font-weight: 700;}
-  .counts-list li{display:flex;align-items:center;gap:5px;padding:3px 0;font-size:11px;border-bottom:1px solid var(--border);}
+
+  /* ── Progressive disclosure ──────────────────────── */
+  details.fx-more summary{list-style:none;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:500;}
+  details.fx-more summary::-webkit-details-marker{display:none;}
+  details.fx-more summary::before{content:'▸';font-size:9px;color:var(--accent);transition:transform .15s;display:inline-block;}
+  details.fx-more[open] summary::before{transform:rotate(90deg);}
+  details.fx-more summary:hover{color:var(--text);}
+
+  /* ── Buttons ─────────────────────────────────────── */
+  .counts-list{list-style:none;overflow-y:auto;}
+  .fill-all-btn{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-s);padding:8px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;width:100%;}
+  .fill-all-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#241505;font-weight:700;}
+  .btn-primary:hover{filter:brightness(1.08);border-color:transparent;}
+  .btn-danger{border-color:rgba(232,100,92,.35);color:var(--danger);}
+  .btn-danger:hover{border-color:var(--danger);background:var(--danger-soft);}
+
+  .tool-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-s);padding:5px 9px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;}
+  .tool-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .tool-btn.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+  .tool-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .toolbar{display:flex;gap:3px;background:var(--bg);border-radius:8px;padding:3px;}
+  .toolbar .tool-btn{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;background:transparent;border:none;}
+  .toolbar .tool-btn:hover{background:var(--accent-soft);}
+  .toolbar .tool-btn.active{background:var(--accent-soft);color:var(--accent);}
+
+  /* ── Canvas / tooltip ────────────────────────────── */
+  .canvas-area{flex:1;overflow:hidden;position:relative;background:radial-gradient(ellipse at 30% 40%,rgba(244,168,58,.05) 0%,transparent 60%),var(--bg);}
+  #map-canvas{position:absolute;top:0;left:0;cursor:crosshair;}
+  .tooltip{position:fixed;background:var(--bg3);border:1px solid var(--accent);border-radius:var(--r-s);padding:5px 10px;font-size:12px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .1s;z-index:100;white-space:nowrap;color:var(--accent);}
+
+  /* ── Status bar ──────────────────────────────────── */
+  .status-bar{background:var(--bg2);border-top:1px solid var(--border);padding:6px 16px;display:flex;gap:16px;align-items:center;font-size:10.5px;color:var(--muted);flex-shrink:0;font-family:var(--font-mono);z-index:10;}
+  .status-bar span{color:var(--text);font-weight:600;}
+  .status-cell-fixed{min-width:140px;flex-shrink:0;}
+
+  /* ── Right panel ─────────────────────────────────── */
+  .right-panel{width:216px;background:var(--bg2);border-left:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;z-index:5;}
+  .right-panel h3{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 14px 9px;border-bottom:1px solid var(--border);}
+  .counts-wrap{padding:8px 14px 10px;flex:1;display:flex;flex-direction:column;min-height:0;}
+  .list-hint{color:var(--muted);font-size:10.5px;padding:6px 2px;}
+  .sel-info{padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+  .sel-preview{width:100%;aspect-ratio:1;border-radius:var(--r-m);overflow:hidden;border:1px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;}
+  .sel-preview img{width:100%;height:100%;object-fit:contain;}
+  .sel-name{font-size:12.5px;font-weight:700;color:var(--accent);text-align:center;word-break:break-all;}
+  .sel-meta{font-size:10.5px;color:var(--muted);text-align:center;}
+
+  .counts-list li{display:flex;align-items:center;gap:7px;padding:5px 2px;font-size:11.5px;border-bottom:1px solid var(--border);}
   .counts-list li:last-child{border:none;}
-  .counts-list .tile-thumb{width:18px;height:18px;border-radius:2px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
+  .counts-list li:hover{background:rgba(255,255,255,.03);}
+  .counts-list .tile-thumb{width:20px;height:20px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
   .counts-list .tile-thumb img{width:100%;height:100%;object-fit:contain;}
   .counts-list .name{flex:1;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .counts-list .count{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--accent);font-size:11px;}
-  .canvas-area{flex:1;overflow:hidden;position:relative;background:radial-gradient(ellipse at 30% 40%,rgba(244,168,58,.04) 0%,transparent 60%),var(--bg);}
-  #map-canvas{position:absolute;top:0;left:0;cursor:crosshair;}
-  .tooltip{position:fixed;background:var(--bg2);border:1px solid var(--accent);border-radius:5px;padding:4px 9px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .1s;z-index:100;white-space:nowrap;color:var(--accent);font-weight:700;}
-  .toolbar{display:flex;gap:5px;flex-wrap:wrap;}
-  .toolbar .tool-btn{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;}
-  .tool-btn{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:border-color .15s,background .15s;}
-  .tool-btn:hover{border-color:var(--accent);background:rgba(244,168,58,.08);}
-  .tool-btn.active{border-color:var(--accent);background:rgba(244,168,58,.15);color:var(--accent);}
-  .tool-btn:disabled{opacity:.35;cursor:not-allowed;}
-  .fill-all-btn{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 9px;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:border-color .15s;width:100%;margin-top:5px;}
-  .fill-all-btn:hover{border-color:var(--accent);}
-  .status-bar{background:var(--bg2);border-top:1px solid var(--border);padding:4px 14px;display:flex;gap:14px;align-items:center;font-size:10px;color:var(--muted);flex-shrink:0;font-family:'JetBrains Mono',monospace;z-index:10;}
-  .status-bar span{color:var(--text);}
-  .status-cell-fixed{min-width:140px;flex-shrink:0;}
-  .right-panel{width:180px;background:var(--bg2);border-left:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;z-index:5;}
-  .right-panel h3{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:10px 12px 5px;border-bottom:1px solid var(--border);font-weight:700;}
-  .sel-info{padding:9px 12px;display:flex;flex-direction:column;gap:7px;}
-  .sel-preview{width:100%;aspect-ratio:1;border-radius:5px;overflow:hidden;border:1px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;}
-  .sel-preview img{width:100%;height:100%;object-fit:contain;}
-  .sel-name{font-size:12px;font-weight:700;color:var(--accent);text-align:center;word-break:break-all;}
-  .sel-meta{font-size:10px;color:var(--muted);text-align:center;}
-  .postfx-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
-  .postfx-label{font-size:10px;color:var(--muted);width:78px;flex-shrink:0;}
-  .postfx-row input[type=range]{flex:1;accent-color:var(--accent);}
-  .postfx-val{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);width:28px;text-align:right;flex-shrink:0;}
-  .export-btn{background:var(--accent2);border:none;border-radius:4px;padding:5px 11px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:background .15s;}
-  .export-btn:hover{background:var(--accent);}
+  .counts-list .count{font-family:var(--font-mono);font-weight:600;color:var(--accent);font-size:11px;}
+
+  /* ── Overlays ─────────────────────────────────────── */
   input[type="file"]{display:none;}
-  #dropzone-overlay{display:none;position:fixed;inset:0;background:rgba(13,15,20,.92);z-index:200;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.3px;flex-direction:column;gap:10px;}
+  #dropzone-overlay{display:none;position:fixed;inset:0;background:rgba(13,15,20,.94);z-index:200;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:var(--accent);letter-spacing:.2px;flex-direction:column;gap:10px;}
   #dropzone-overlay.show{display:flex;}
-  .hint-overlay{position:absolute;bottom:10px;right:10px;background:rgba(22,25,33,.85);border:1px solid var(--border);border-radius:5px;padding:6px 10px;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;pointer-events:auto;line-height:1.7;}
-  #hint-close{pointer-events:auto;}
+  .hint-overlay{position:absolute;bottom:12px;right:12px;background:rgba(19,22,30,.92);border:1px solid var(--border);border-radius:var(--r-m);padding:10px 26px 10px 14px;font-size:11px;color:var(--muted);font-family:var(--font-mono);line-height:1.85;pointer-events:auto;max-width:250px;}
+  #hint-close{pointer-events:auto;position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:9px;line-height:14px;text-align:center;cursor:pointer;padding:0;transition:border-color .15s,color .15s;}
   #hint-close:hover{border-color:var(--accent);color:var(--accent);}
-  #tiles-loading,#decos-loading{display:none;font-size:10px;color:var(--muted);padding:5px 0;text-align:center;}
+  #tiles-loading,#decos-loading{display:none;font-size:10.5px;color:var(--muted);padding:0;margin-top:8px;text-align:center;}
   #deco-ghost{position:absolute;pointer-events:none;display:none;z-index:20;}
-  .io-item{display:block;width:100%;background:none;border:none;padding:8px 14px;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-align:left;transition:background .15s;}
-  .io-item:hover{background:rgba(244,168,58,.1);color:var(--accent);}
-  ::-webkit-scrollbar{width:5px;height:5px;}
-  ::-webkit-scrollbar-track{background:var(--bg2);}
+
+  /* ── IO dropdown ─────────────────────────────────── */
+  .io-item{display:block;width:100%;background:none;border:none;padding:9px 14px;color:var(--text);font-size:12px;font-weight:500;cursor:pointer;text-align:left;transition:background .15s;}
+  .io-item:hover{background:var(--accent-soft);color:var(--accent);}
+
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
   ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
-  #lang-toggle{display:flex;align-items:center;gap:6px;}
+  #lang-toggle{display:flex;align-items:center;gap:6px;background:var(--bg3);}
   #lang-toggle .flag{font-size:14px;line-height:1;font-family:"Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji",sans-serif;}
 </style>
 </head>
 <body>
 <header>
   <h1>🍪 CRK Map Art Planner</h1>
-  <span style="color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;">256×240 · iso</span>
-  <button class="tool-btn" id="lang-toggle" title="Switch language / Сменить язык" style="font-size:11px;padding:3px 9px;">
+  <span class="header-meta">256×240 · iso</span>
+  <button class="tool-btn" id="lang-toggle" title="Switch language / Сменить язык">
     <span class="flag" id="lang-flag" style="display:inline-flex;vertical-align:-2px;"></span><span id="lang-label">RU</span>
   </button>
-  <div style="margin-left:auto;display:flex;gap:7px;align-items:center;">
-    <button class="tool-btn" id="btn-hide-decos" title="Скрыть/показать декорации" style="font-size:11px;padding:3px 9px;height:26px;display:inline-flex;align-items:center;line-height:1;" data-i18n="hideDecos">🌸 Скрыть декорации</button>
-    <button class="tool-btn" id="btn-undo" disabled title="Ctrl+Z" style="font-size:14px;padding:3px 9px;">↩</button>
-    <button class="tool-btn" id="btn-redo" disabled title="Ctrl+Y" style="font-size:14px;padding:3px 9px;">↪</button>
-    <button class="tool-btn" id="btn-grid" style="font-size:12px;padding:3px 9px;" data-i18n="gridOff">⊟ Выкл</button>
-    <input type="file" id="btn-load-xml-input" accept=".xml" style="display:none;">
-    <div style="position:relative;" id="io-menu-wrap">
-      <button class="tool-btn" id="btn-io-toggle" style="font-size:11px;padding:3px 9px;height:26px;display:inline-flex;align-items:center;line-height:1;" data-i18n="ioToggle">Импорт/Экспорт ▾</button>
-      <div id="io-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:6px;min-width:155px;z-index:50;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4);">
-        <button class="io-item" id="export-btn" data-i18n="exportPng">💾 PNG</button>
-        <button class="io-item" id="btn-save-xml" data-i18n="exportXml">💾 XML</button>
-        <label class="io-item" for="btn-load-xml-input" style="cursor:pointer;" data-i18n="importXml">📁 XML (загрузить)</label>
+  <div class="header-actions">
+    <div class="header-group">
+      <button class="tool-btn" id="btn-hide-decos" title="Скрыть/показать декорации" data-i18n="hideDecos">🌸 Скрыть декорации</button>
+      <button class="tool-btn" id="btn-grid" data-i18n="gridOff">⊟ Выкл</button>
+    </div>
+    <div class="header-group">
+      <button class="tool-btn" id="btn-undo" disabled title="Ctrl+Z" style="font-size:14px;">↩</button>
+      <button class="tool-btn" id="btn-redo" disabled title="Ctrl+Y" style="font-size:14px;">↪</button>
+    </div>
+    <div class="header-group">
+      <input type="file" id="btn-load-xml-input" accept=".xml" style="display:none;">
+      <div style="position:relative;" id="io-menu-wrap">
+        <button class="tool-btn" id="btn-io-toggle" data-i18n="ioToggle">Импорт/Экспорт ▾</button>
+        <div id="io-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;min-width:160px;z-index:50;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.45);">
+          <button class="io-item" id="export-btn" data-i18n="exportPng">💾 PNG</button>
+          <button class="io-item" id="btn-save-xml" data-i18n="exportXml">💾 XML</button>
+          <label class="io-item" for="btn-load-xml-input" style="cursor:pointer;" data-i18n="importXml">📁 XML (загрузить)</label>
+        </div>
       </div>
     </div>
   </div>
@@ -118,112 +199,118 @@
 <div class="main">
   <div class="sidebar">
     <div class="sidebar-section">
-      <h3 data-i18n="importPhoto">Импорт фото</h3>
+      <h3><span class="sec-icon">🖼️</span><span data-i18n="importPhoto">Импорт фото</span></h3>
       <label class="upload-btn" for="img-upload">
         <span class="icon">🖼</span>
         <div><span data-i18n="uploadImage">Загрузить изображение</span><span class="hint" data-i18n="uploadImageHint">PNG / JPG / WEBP</span></div>
       </label>
       <input type="file" id="img-upload" accept="image/*">
       <div class="source-preview" id="source-preview">
-  <canvas id="source-fx-canvas" style="width:100%;display:block;"></canvas>
+  <canvas id="source-fx-canvas"></canvas>
   <img id="source-img" src="" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s ease;">
 </div>
 
-      <div id="img-overlay-controls" style="display:none;margin-top:7px;">
-        <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
-          <span style="font-size:10px;color:var(--muted);width:56px;" data-i18n="opacity">Прозрачность</span>
-          <input type="range" id="img-opacity" min="10" max="90" value="45" style="flex:1;">
+      <div id="img-overlay-controls" class="img-overlay-controls">
+        <div class="field-row">
+          <span class="field-label" data-i18n="opacity">Прозрачность</span>
+          <input type="range" id="img-opacity" min="10" max="90" value="45">
         </div>
-        <div style="display:flex;gap:4px;">
-          <button class="tool-btn" id="img-fit-btn" style="flex:1;font-size:10px;" data-i18n="fitBtn">⛶ Вписать</button>
-          <button class="tool-btn" id="img-hide-btn" style="flex:1;font-size:10px;" data-i18n="hideBtn">👁 Скрыть</button>
+        <div class="btn-row">
+          <button class="tool-btn" id="img-fit-btn" data-i18n="fitBtn">⛶ Вписать</button>
+          <button class="tool-btn" id="img-hide-btn" data-i18n="hideBtn">👁 Скрыть</button>
         </div>
       </div>
     </div>
 
     <div class="sidebar-section" id="img-postfx-section" style="display:none;">
-      <h3 data-i18n="imgProcessing">Обработка изображения</h3>
-      <div class="postfx-row">
-        <span class="postfx-label" data-i18n="brightness">Яркость</span>
+      <h3><span class="sec-icon">🎛️</span><span data-i18n="imgProcessing">Обработка изображения</span></h3>
+      <div class="field-row">
+        <span class="field-label" data-i18n="brightness">Яркость</span>
         <input type="range" id="fx-brightness" min="-100" max="100" value="0">
-        <span class="postfx-val" id="fx-brightness-val">0</span>
+        <span class="field-value" id="fx-brightness-val">0</span>
       </div>
-      <div class="postfx-row">
-        <span class="postfx-label" data-i18n="contrast">Контраст</span>
+      <div class="field-row">
+        <span class="field-label" data-i18n="contrast">Контраст</span>
         <input type="range" id="fx-contrast" min="-100" max="100" value="0">
-        <span class="postfx-val" id="fx-contrast-val">0</span>
+        <span class="field-value" id="fx-contrast-val">0</span>
       </div>
-      <div class="postfx-row">
-        <span class="postfx-label" data-i18n="saturation">Насыщенность</span>
+      <div class="field-row">
+        <span class="field-label" data-i18n="saturation">Насыщенность</span>
         <input type="range" id="fx-saturation" min="-100" max="100" value="0">
-        <span class="postfx-val" id="fx-saturation-val">0</span>
+        <span class="field-value" id="fx-saturation-val">0</span>
       </div>
-      <div class="postfx-row">
-        <span class="postfx-label" data-i18n="sharpen">Резкость краёв</span>
-        <input type="range" id="fx-sharpen" min="0" max="100" value="0">
-        <span class="postfx-val" id="fx-sharpen-val">0</span>
+      <details class="fx-more">
+        <summary data-i18n="moreAdjustments">Больше настроек</summary>
+        <div class="field-row">
+          <span class="field-label" data-i18n="sharpen">Резкость краёв</span>
+          <input type="range" id="fx-sharpen" min="0" max="100" value="0">
+          <span class="field-value" id="fx-sharpen-val">0</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label" data-i18n="posterize">Постеризация</span>
+          <input type="range" id="fx-posterize" min="0" max="8" value="0">
+          <span class="field-value" id="fx-posterize-val" data-i18n="off">выкл</span>
+        </div>
+        <label class="toggle-row" title="Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками" data-i18n-title="ditherTitle">
+          <span data-i18n="dither">Дизеринг (сглаживание)</span>
+          <span class="switch">
+            <input type="checkbox" id="fx-dither">
+            <span id="fx-dither-track" class="switch-track"></span>
+            <span id="fx-dither-thumb" class="switch-thumb"></span>
+          </span>
+        </label>
+      </details>
+      <div class="btn-row">
+        <button class="fill-all-btn" id="img-adjust-btn" data-i18n="adjustPosition">🔧 Изменить положение</button>
+        <button class="fill-all-btn" id="fx-reset-btn" data-i18n="resetFx">↺ Сбросить настройки</button>
       </div>
-      <div class="postfx-row">
-        <span class="postfx-label" data-i18n="posterize">Постеризация</span>
-        <input type="range" id="fx-posterize" min="0" max="8" value="0">
-        <span class="postfx-val" id="fx-posterize-val" data-i18n="off">выкл</span>
-      </div>
-      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками" data-i18n-title="ditherTitle">
-        <span style="font-size:11px;color:var(--muted);" data-i18n="dither">Дизеринг (сглаживание)</span>
-        <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
-          <input type="checkbox" id="fx-dither" style="opacity:0;width:0;height:0;position:absolute;">
-          <span id="fx-dither-track" style="position:absolute;inset:0;background:var(--bg);border:1px solid var(--border);border-radius:17px;transition:background .2s;"></span>
-          <span id="fx-dither-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;"></span>
-        </span>
-      </label>
-      <button class="fill-all-btn" id="img-adjust-btn" style="margin-top:6px;" data-i18n="adjustPosition">🔧 Изменить положение</button>
-      <button class="fill-all-btn" id="fx-reset-btn" style="margin-top:6px;" data-i18n="resetFx">↺ Сбросить настройки</button>
     </div>
 
     <div class="sidebar-section">
-      <h3 data-i18n="tools">Инструменты</h3>
+      <h3><span class="sec-icon">✨</span><span data-i18n="photoConvert">Конвертация в плитки</span></h3>
+      <button class="fill-all-btn btn-primary" id="apply-img" data-i18n="applyImage">🎨 Применить изображение</button>
+      <div class="field-block">
+        <div class="field-block-top">
+          <span class="field-label" data-i18n="decoThreshold">Порог цвета для декораций</span>
+          <span class="field-value" id="deco-threshold-val">1500</span>
+        </div>
+        <input type="range" id="deco-threshold" min="0" max="5000" value="1500">
+        <div class="field-block-bottom">
+          <span data-i18n="less">меньше</span>
+          <span data-i18n="more">больше</span>
+        </div>
+      </div>
+      <label class="toggle-row" title="Если выключено — это фото убирает декорации других фото в своей зоне, даже если само их не ставит" data-i18n-title="keepForeignDecosTitle">
+        <span data-i18n="keepForeignDecos">Оставлять декорации на месте</span>
+        <span class="switch">
+          <input type="checkbox" id="keep-foreign-decos">
+          <span id="keep-foreign-decos-track" class="switch-track"></span>
+          <span id="keep-foreign-decos-thumb" class="switch-thumb"></span>
+        </span>
+      </label>
+      <label class="toggle-row" title="Применять декорации при импорте изображения" data-i18n-title="decosOnImportTitle">
+        <span data-i18n="decosOnImport">Декорации при импорте</span>
+        <span class="switch">
+          <input type="checkbox" id="apply-decos" checked>
+          <span id="apply-decos-track" class="switch-track"></span>
+          <span id="apply-decos-thumb" class="switch-thumb" style="left:17px;"></span>
+        </span>
+      </label>
+      <button class="fill-all-btn btn-danger" id="clear-decos-btn" data-i18n="clearDecos">🚫 Убрать все декорации</button>
+    </div>
+
+    <div class="sidebar-section">
+      <h3><span class="sec-icon">🛠️</span><span data-i18n="tools">Инструменты</span></h3>
       <div class="toolbar">
         <button class="tool-btn active" id="tool-draw" data-i18n="toolDraw">✏ Рисовать</button>
         <button class="tool-btn" id="tool-erase" data-i18n="toolErase">✕ Ластик</button>
         <button class="tool-btn" id="tool-fill" data-i18n="toolFill">🪣 Заливка</button>
       </div>
-      <button class="fill-all-btn" id="apply-img" data-i18n="applyImage">🎨 Применить изображение</button>
-      <button class="fill-all-btn" id="clear-btn" style="margin-top:3px;border-color:#7a2020;color:#e87d7d;" data-i18n="clearMap">🗑 Очистить карту</button>
-      <!-- Threshold slider -->
-      <div style="margin-top:8px;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span style="font-size:10px;color:var(--muted);" data-i18n="decoThreshold">Порог цвета для декораций</span>
-          <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);" id="deco-threshold-val">1500</span>
-        </div>
-        <input type="range" id="deco-threshold" min="0" max="5000" value="1500" style="width:100%;accent-color:var(--accent);">
-        <div style="display:flex;justify-content:space-between;margin-top:2px;">
-          <span style="font-size:9px;color:var(--muted);" data-i18n="less">меньше</span>
-          <span style="font-size:9px;color:var(--muted);" data-i18n="more">больше</span>
-        </div>
-      </div>
-      <!-- Toggle: whether this photo's footprint clears decorations left by another photo/manual edit when it doesn't produce its own there -->
-      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Если выключено — это фото убирает декорации других фото в своей зоне, даже если само их не ставит" data-i18n-title="keepForeignDecosTitle">
-        <span style="font-size:11px;color:var(--muted);" data-i18n="keepForeignDecos">Оставлять декорации на месте</span>
-        <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
-          <input type="checkbox" id="keep-foreign-decos" style="opacity:0;width:0;height:0;position:absolute;">
-          <span id="keep-foreign-decos-track" style="position:absolute;inset:0;background:var(--bg);border:1px solid var(--border);border-radius:17px;transition:background .2s;"></span>
-          <span id="keep-foreign-decos-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;"></span>
-        </span>
-      </label>
-      <!-- Toggle: use decos on image apply -->
-      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Применять декорации при импорте изображения" data-i18n-title="decosOnImportTitle">
-        <span style="font-size:11px;color:var(--muted);" data-i18n="decosOnImport">Декорации при импорте</span>
-        <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
-          <input type="checkbox" id="apply-decos" checked style="opacity:0;width:0;height:0;position:absolute;">
-          <span id="apply-decos-track" style="position:absolute;inset:0;background:var(--accent);border-radius:17px;transition:background .2s;"></span>
-          <span id="apply-decos-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;left:17px;"></span>
-        </span>
-      </label>
-      <button class="fill-all-btn" id="clear-decos-btn" style="margin-top:8px;border-color:#7a2020;color:#e87d7d;" data-i18n="clearDecos">🚫 Убрать все декорации</button>
+      <button class="fill-all-btn btn-danger" id="clear-btn" data-i18n="clearMap">🗑 Очистить карту</button>
     </div>
 
     <div class="sidebar-section" style="flex:1;">
-      <h3 data-i18n="palette">Палитра</h3>
+      <h3><span class="sec-icon">🎨</span><span data-i18n="palette">Палитра</span></h3>
       <div class="tab-bar">
         <button class="tab-btn active" id="tab-tiles" data-i18n="tabTiles">🧱 Плитки</button>
         <button class="tab-btn" id="tab-decos" data-i18n="tabDecos">🌸 Декорации</button>
@@ -235,7 +322,7 @@
         </label>
         <input type="file" id="tiles-upload" accept=".webp,image/webp" multiple>
         <div id="tiles-loading" data-i18n="loadingTiles">⏳ Загрузка плиток…</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:4px;" data-i18n="rmbToggle">ПКМ — откл/вкл</div>
+        <div class="rmb-hint" data-i18n="rmbToggle">ПКМ — откл/вкл</div>
         <div id="palette-grid" class="palette-grid"></div>
       </div>
       <div class="tab-panel" id="panel-decos">
@@ -245,7 +332,7 @@
         </label>
         <input type="file" id="decos-upload" accept=".png,image/png" multiple>
         <div id="decos-loading" data-i18n="loadingDecos">⏳ Загрузка декораций…</div>
-        <div style="font-size:9px;color:var(--muted);margin-top:4px;" data-i18n="rmbToggle">ПКМ — откл/вкл</div>
+        <div class="rmb-hint" data-i18n="rmbToggle">ПКМ — откл/вкл</div>
         <div id="deco-grid" class="deco-grid"></div>
       </div>
     </div>
@@ -255,7 +342,7 @@
     <canvas id="map-canvas"></canvas>
     <canvas id="deco-ghost" style="position:absolute;pointer-events:none;display:none;"></canvas>
     <div class="hint-overlay" id="hint-overlay">
-      <button id="hint-close" style="position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:10px;line-height:14px;text-align:center;cursor:pointer;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;transition:border-color .15s,color .15s;">✕</button>
+      <button id="hint-close">✕</button>
       <span data-i18n="hint1">Колесико — масштаб</span><br>
       <span data-i18n="hint2">Пробел + ЛКМ — двигать камеру</span><br>
       <span data-i18n="hint3">ЛКМ — поставить</span><br>
@@ -268,9 +355,9 @@
 
   <div class="right-panel">
     <h3 data-i18n="expense">Расход</h3>
-    <div style="padding:4px 12px 9px;flex:1;display:flex;flex-direction:column;min-height:0;">
+    <div class="counts-wrap">
       <ul class="counts-list" id="counts-list">
-        <li style="color:var(--muted);font-size:10px;padding:5px 0;" data-i18n="drawMapHint">Нарисуйте карту</li>
+        <li class="list-hint" data-i18n="drawMapHint">Нарисуйте карту</li>
       </ul>
     </div>
     <h3 data-i18n="selected">Выбрано</h3>
@@ -315,10 +402,11 @@ const I18N = {
     srcFxHint:'Кликни на превью чтобы отключить обработку',
     opacity:'Прозрачность', fitBtn:'⛶ Вписать', hideBtn:'👁 Скрыть', showBtn:'👁 Показать',
     imgProcessing:'Обработка изображения', brightness:'Яркость', contrast:'Контраст', saturation:'Насыщенность',
-    sharpen:'Резкость краёв', posterize:'Постеризация', off:'выкл',
+    sharpen:'Резкость краёв', posterize:'Постеризация', off:'выкл', moreAdjustments:'Больше настроек',
     ditherTitle:'Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками',
     dither:'Дизеринг (сглаживание)', resetFx:'↺ Сбросить настройки',
     adjustPosition:'🔧 Изменить положение', adjustDone:'✓ Готово', alertApplyFirst:'Сначала примените изображение!',
+    photoConvert:'Конвертация в плитки',
     tools:'Инструменты', toolDraw:'✏ Рисовать', toolErase:'✕ Ластик', toolFill:'🪣 Заливка',
     applyImage:'🎨 Применить изображение', clearMap:'🗑 Очистить карту',
     decoThreshold:'Порог цвета для декораций', less:'меньше', more:'больше',
@@ -349,10 +437,11 @@ const I18N = {
     srcFxHint:'Click the preview to disable processing',
     opacity:'Opacity', fitBtn:'⛶ Fit', hideBtn:'👁 Hide', showBtn:'👁 Show',
     imgProcessing:'Image processing', brightness:'Brightness', contrast:'Contrast', saturation:'Saturation',
-    sharpen:'Edge sharpen', posterize:'Posterize', off:'off',
+    sharpen:'Edge sharpen', posterize:'Posterize', off:'off', moreAdjustments:'More adjustments',
     ditherTitle:'Dithering (Floyd–Steinberg) for smoother transitions between tiles',
     dither:'Dithering (smoothing)', resetFx:'↺ Reset settings',
     adjustPosition:'🔧 Adjust position', adjustDone:'✓ Done', alertApplyFirst:'Apply the image first!',
+    photoConvert:'Convert to tiles',
     tools:'Tools', toolDraw:'✏ Draw', toolErase:'✕ Erase', toolFill:'🪣 Fill',
     applyImage:'🎨 Apply image', clearMap:'🗑 Clear map',
     decoThreshold:'Decoration color threshold', less:'less', more:'more',
@@ -1930,7 +2019,7 @@ function updateCounts(){
   const decoArr=Object.entries(decoCounts).map(([n,c])=>({n,c,isDeco:true})).sort((a,b)=>b.c-a.c);
   const list=document.getElementById('counts-list');
   list.innerHTML='';
-  if(!tileArr.length&&!decoArr.length){list.innerHTML=`<li style="color:var(--muted);font-size:10px;padding:5px 0;">${t('empty')}</li>`;return;}
+  if(!tileArr.length&&!decoArr.length){list.innerHTML=`<li class="list-hint">${t('empty')}</li>`;return;}
   const addGroup=(label,arr)=>{
   if(!arr.length)return;
   const h=document.createElement('li');
@@ -2008,7 +2097,7 @@ document.getElementById('export-btn').addEventListener('click',()=>{
     }
   }
   const dArr=[...gridDecos.values()].sort((a,b2)=>(a.dr+a.dc)-(b2.dr+b2.dc));
-  for(const d of dArr){const sc=d.dc-DECO_OFF,sr=d.dr-DECO_OFF;const{sx,sy}=isoXY(sc,sr);octx.drawImage(d.deco.img,sx-DECO_VW/2,sy,DECO_VW,DECO_VH);}
+  for(const d of dArr){const sc=d.dc-DECO_OFF_L,sr=d.dr-DECO_OFF_T;const{sx,sy}=isoXY(sc,sr);octx.drawImage(d.deco.img,sx-DECO_VW/2,sy,DECO_VW,DECO_VH);}
   const a=document.createElement('a'); a.download='crk-map-art.png'; a.href=oc.toDataURL('image/png'); a.click();
 });
 
