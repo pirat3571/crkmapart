@@ -201,6 +201,15 @@
           <span style="font-size:9px;color:var(--muted);" data-i18n="more">больше</span>
         </div>
       </div>
+      <!-- Toggle: whether this photo's footprint clears decorations left by another photo/manual edit when it doesn't produce its own there -->
+      <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Если выключено — это фото убирает декорации других фото в своей зоне, даже если само их не ставит" data-i18n-title="keepForeignDecosTitle">
+        <span style="font-size:11px;color:var(--muted);" data-i18n="keepForeignDecos">Оставлять декорации на месте</span>
+        <span style="position:relative;display:inline-block;width:32px;height:17px;flex-shrink:0;">
+          <input type="checkbox" id="keep-foreign-decos" style="opacity:0;width:0;height:0;position:absolute;">
+          <span id="keep-foreign-decos-track" style="position:absolute;inset:0;background:var(--bg);border:1px solid var(--border);border-radius:17px;transition:background .2s;"></span>
+          <span id="keep-foreign-decos-thumb" style="position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .2s;"></span>
+        </span>
+      </label>
       <!-- Toggle: use decos on image apply -->
       <label style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;" title="Применять декорации при импорте изображения" data-i18n-title="decosOnImportTitle">
         <span style="font-size:11px;color:var(--muted);" data-i18n="decosOnImport">Декорации при импорте</span>
@@ -313,6 +322,7 @@ const I18N = {
     tools:'Инструменты', toolDraw:'✏ Рисовать', toolErase:'✕ Ластик', toolFill:'🪣 Заливка',
     applyImage:'🎨 Применить изображение', clearMap:'🗑 Очистить карту',
     decoThreshold:'Порог цвета для декораций', less:'меньше', more:'больше',
+    keepForeignDecosTitle:'Если выключено — это фото убирает декорации других фото в своей зоне, даже если само их не ставит', keepForeignDecos:'Оставлять декорации на месте',
     decosOnImportTitle:'Применять декорации при импорте изображения', decosOnImport:'Декорации при импорте',
     clearDecos:'🚫 Убрать все декорации',
     palette:'Палитра', tabTiles:'🧱 Плитки', tabDecos:'🌸 Декорации',
@@ -346,6 +356,7 @@ const I18N = {
     tools:'Tools', toolDraw:'✏ Draw', toolErase:'✕ Erase', toolFill:'🪣 Fill',
     applyImage:'🎨 Apply image', clearMap:'🗑 Clear map',
     decoThreshold:'Decoration color threshold', less:'less', more:'more',
+    keepForeignDecosTitle:'If off — this photo clears other photos\' decorations within its footprint, even where it places none of its own', keepForeignDecos:'Keep decorations in place',
     decosOnImportTitle:'Apply decorations when importing an image', decosOnImport:'Decorations on import',
     clearDecos:'🚫 Remove all decorations',
     palette:'Palette', tabTiles:'🧱 Tiles', tabDecos:'🌸 Decorations',
@@ -1410,6 +1421,18 @@ function syncDecoToggle(){
 }
 applyDecosChk.addEventListener('change', syncDecoToggle);
 syncDecoToggle();
+
+const keepForeignDecosChk = document.getElementById('keep-foreign-decos');
+const keepForeignDecosTrack = document.getElementById('keep-foreign-decos-track');
+const keepForeignDecosThumb = document.getElementById('keep-foreign-decos-thumb');
+function syncKeepForeignDecosToggle(){
+  const on = keepForeignDecosChk.checked;
+  keepForeignDecosTrack.style.background = on ? 'var(--accent)' : 'var(--bg)';
+  keepForeignDecosTrack.style.border = on ? 'none' : '1px solid var(--border)';
+  keepForeignDecosThumb.style.left = on ? '17px' : '2px';
+}
+keepForeignDecosChk.addEventListener('change', ()=>{ syncKeepForeignDecosToggle(); scheduleReapply(); });
+syncKeepForeignDecosToggle();
 document.getElementById('hint-close').addEventListener('click',()=>{
   document.getElementById('hint-overlay').style.display='none';
 });
@@ -1675,16 +1698,31 @@ function reapplyImage(){
   // Decos — same baseline-restore-then-paint approach as tiles above.
   const useDecos=document.getElementById('apply-decos').checked;
   const threshold=parseInt(document.getElementById('deco-threshold').value);
+  const keepForeignDecos=document.getElementById('keep-foreign-decos').checked;
   if(sessionBaseDecos) gridDecos=new Map(sessionBaseDecos);
-  if(useDecos && rawDecoSamples && decoColorsCache && decoColorsCache.length){
-    const applyData=[];
-    for(const s of rawDecoSamples){
-      const c=applyPostFX(s.r,s.g,s.b,fxp);
-      const{best,bestD}=matchColor(c.r,c.g,c.b,decoColorsCache);
-      applyData.push({dc:s.dc,dr:s.dr,r:c.r,g:c.g,b:c.b,best,bestD});
-      if(best&&bestD<threshold) gridDecos.set(`${s.dc},${s.dr}`,{deco:best.deco,dc:s.dc,dr:s.dr});
+  if(rawDecoSamples && rawDecoSamples.length){
+    if(!keepForeignDecos){
+      // By default this photo's footprint should look "clean": clear any
+      // decoration sitting in every cell it covers (typically left over from
+      // a different, earlier-applied photo, restored a moment ago by the
+      // baseline-restore above) before repainting only what THIS photo
+      // itself produces. Without this, moving a photo with no decorations
+      // of its own onto another photo's decorated area leaves those
+      // decorations behind, poking out from under the new tiles.
+      for(const s of rawDecoSamples) gridDecos.delete(`${s.dc},${s.dr}`);
     }
-    lastDecoApplyData=applyData;
+    if(useDecos && decoColorsCache && decoColorsCache.length){
+      const applyData=[];
+      for(const s of rawDecoSamples){
+        const c=applyPostFX(s.r,s.g,s.b,fxp);
+        const{best,bestD}=matchColor(c.r,c.g,c.b,decoColorsCache);
+        applyData.push({dc:s.dc,dr:s.dr,r:c.r,g:c.g,b:c.b,best,bestD});
+        if(best&&bestD<threshold) gridDecos.set(`${s.dc},${s.dr}`,{deco:best.deco,dc:s.dc,dr:s.dr});
+      }
+      lastDecoApplyData=applyData;
+    } else {
+      lastDecoApplyData=null;
+    }
   }
 
   render(); updateCounts(); updateSourcePreview();
@@ -2010,6 +2048,9 @@ document.getElementById('deco-threshold').addEventListener('input',e=>{
   // performance) doesn't otherwise know about them.
   if(sessionBaseDecos) gridDecos=new Map(sessionBaseDecos);
   else gridDecos.clear();
+  if(!document.getElementById('keep-foreign-decos').checked){
+    for(const pt of lastDecoApplyData) gridDecos.delete(`${pt.dc},${pt.dr}`);
+  }
   for(const pt of lastDecoApplyData){
     if(pt.best&&pt.bestD<val) gridDecos.set(`${pt.dc},${pt.dr}`,{deco:pt.best.deco,dc:pt.dc,dr:pt.dr});
   }
