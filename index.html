@@ -1821,6 +1821,12 @@ document.getElementById('apply-img').addEventListener('click',()=>{
   document.getElementById('img-adjust-btn').textContent=t('adjustPosition');
   document.getElementById('img-overlay-controls').style.display='none';
   document.getElementById('img-postfx-section').style.display='block';
+  // reapplyImage() above already called render(), but at that point
+  // imgOvVisible was still true, so the semi-transparent photo overlay got
+  // drawn into that frame and stuck around until something else (e.g.
+  // panning the camera) happened to trigger another render(). Now that the
+  // flag is actually false, redraw once more to clear it immediately.
+  render();
 });
 
 // Wire up all postfx controls to live-update via reapplyImage(), coalesced to
