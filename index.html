@@ -36,14 +36,20 @@
   .sec-icon{font-size:13px;line-height:1;}
   /* Consistent internal rhythm: every direct child after the first gets the same top margin,
      regardless of tag/class — robust even where JS forces a parent to inline display:block. */
-  .sidebar-section>*+*,details.fx-more>*+*,.img-overlay-controls>*+*{margin-top:10px;}
+  .sidebar-section>*+*,.img-overlay-controls>*+*{margin-top:10px;}
 
   /* ── Field rows (label + slider + value) ───────── */
-  .field-row{display:flex;align-items:center;gap:8px;}
+  .field-row{display:flex;align-items:center;gap:4px;}
   .field-label{font-size:11.5px;color:var(--muted);flex-shrink:0;}
-  .field-value{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);min-width:26px;text-align:right;flex-shrink:0;}
-  .field-row input[type=range]{flex:1;width:auto;}
-  input[type=range]{accent-color:var(--accent);height:4px;cursor:pointer;}
+  .field-row .field-label{width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .field-value{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);width:36px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+  .field-row input[type=range]{flex:1;min-width:0;}
+  input[type=range]{-webkit-appearance:none;-moz-appearance:none;appearance:none;height:16px;background:transparent;cursor:pointer;margin:0;--fill:0%;}
+  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:linear-gradient(to right,var(--accent) var(--fill,0%),var(--border) var(--fill,0%));}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg3);margin-top:-4.5px;box-shadow:0 1px 3px rgba(0,0,0,.45);}
+  input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:linear-gradient(to right,var(--accent) var(--fill,0%),var(--border) var(--fill,0%));}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg3);box-shadow:0 1px 3px rgba(0,0,0,.45);}
+  input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
   .btn-row{display:flex;gap:6px;}
   .btn-row .fill-all-btn{flex:1;}
@@ -90,19 +96,13 @@
   .tile-item .tile-name{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);font-size:8.5px;font-weight:500;text-align:center;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s;}
   .tile-item:hover .tile-name{opacity:1;}
 
-  /* ── Progressive disclosure ──────────────────────── */
-  details.fx-more summary{list-style:none;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:500;}
-  details.fx-more summary::-webkit-details-marker{display:none;}
-  details.fx-more summary::before{content:'▸';font-size:9px;color:var(--accent);transition:transform .15s;display:inline-block;}
-  details.fx-more[open] summary::before{transform:rotate(90deg);}
-  details.fx-more summary:hover{color:var(--text);}
-
   /* ── Buttons ─────────────────────────────────────── */
   .counts-list{list-style:none;overflow-y:auto;}
   .fill-all-btn{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-s);padding:8px 10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;width:100%;}
   .fill-all-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
-  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#241505;font-weight:700;}
-  .btn-primary:hover{filter:brightness(1.08);border-color:transparent;}
+  .btn-primary{background:var(--accent);border:none;color:#241505;font-weight:700;position:relative;top:0;box-shadow:0 3px 0 var(--accent2);transition:top .08s ease,box-shadow .08s ease,filter .15s;}
+  .btn-primary:hover{background:var(--accent);border-color:transparent;filter:brightness(1.06);}
+  .btn-primary:active{top:2px;box-shadow:0 1px 0 var(--accent2);}
   .btn-danger{border-color:rgba(232,100,92,.35);color:var(--danger);}
   .btn-danger:hover{border-color:var(--danger);background:var(--danger-soft);}
 
@@ -138,7 +138,7 @@
 
   .counts-list li{display:flex;align-items:center;gap:7px;padding:5px 2px;font-size:11.5px;border-bottom:1px solid var(--border);}
   .counts-list li:last-child{border:none;}
-  .counts-list li:hover{background:rgba(255,255,255,.03);}
+  .counts-list li:hover:not(.group-header){background:rgba(255,255,255,.03);}
   .counts-list .tile-thumb{width:20px;height:20px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--bg3);}
   .counts-list .tile-thumb img{width:100%;height:100%;object-fit:contain;}
   .counts-list .name{flex:1;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -239,27 +239,24 @@
         <input type="range" id="fx-saturation" min="-100" max="100" value="0">
         <span class="field-value" id="fx-saturation-val">0</span>
       </div>
-      <details class="fx-more">
-        <summary data-i18n="moreAdjustments">Больше настроек</summary>
-        <div class="field-row">
-          <span class="field-label" data-i18n="sharpen">Резкость краёв</span>
-          <input type="range" id="fx-sharpen" min="0" max="100" value="0">
-          <span class="field-value" id="fx-sharpen-val">0</span>
-        </div>
-        <div class="field-row">
-          <span class="field-label" data-i18n="posterize">Постеризация</span>
-          <input type="range" id="fx-posterize" min="0" max="8" value="0">
-          <span class="field-value" id="fx-posterize-val" data-i18n="off">выкл</span>
-        </div>
-        <label class="toggle-row" title="Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками" data-i18n-title="ditherTitle">
-          <span data-i18n="dither">Дизеринг (сглаживание)</span>
-          <span class="switch">
-            <input type="checkbox" id="fx-dither">
-            <span id="fx-dither-track" class="switch-track"></span>
-            <span id="fx-dither-thumb" class="switch-thumb"></span>
-          </span>
-        </label>
-      </details>
+      <div class="field-row">
+        <span class="field-label" data-i18n="sharpen">Резкость краёв</span>
+        <input type="range" id="fx-sharpen" min="0" max="100" value="0">
+        <span class="field-value" id="fx-sharpen-val">0</span>
+      </div>
+      <div class="field-row">
+        <span class="field-label" data-i18n="posterize">Постеризация</span>
+        <input type="range" id="fx-posterize" min="0" max="8" value="0">
+        <span class="field-value" id="fx-posterize-val" data-i18n="off">выкл</span>
+      </div>
+      <label class="toggle-row" title="Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками" data-i18n-title="ditherTitle">
+        <span data-i18n="dither">Дизеринг (сглаживание)</span>
+        <span class="switch">
+          <input type="checkbox" id="fx-dither">
+          <span id="fx-dither-track" class="switch-track"></span>
+          <span id="fx-dither-thumb" class="switch-thumb"></span>
+        </span>
+      </label>
       <div class="btn-row">
         <button class="fill-all-btn" id="img-adjust-btn" data-i18n="adjustPosition">🔧 Изменить положение</button>
         <button class="fill-all-btn" id="fx-reset-btn" data-i18n="resetFx">↺ Сбросить настройки</button>
@@ -402,7 +399,7 @@ const I18N = {
     srcFxHint:'Кликни на превью чтобы отключить обработку',
     opacity:'Прозрачность', fitBtn:'⛶ Вписать', hideBtn:'👁 Скрыть', showBtn:'👁 Показать',
     imgProcessing:'Обработка изображения', brightness:'Яркость', contrast:'Контраст', saturation:'Насыщенность',
-    sharpen:'Резкость краёв', posterize:'Постеризация', off:'выкл', moreAdjustments:'Больше настроек',
+    sharpen:'Резкость краёв', posterize:'Постеризация', off:'выкл',
     ditherTitle:'Дизеринг (Floyd–Steinberg) для более плавных переходов между плитками',
     dither:'Дизеринг (сглаживание)', resetFx:'↺ Сбросить настройки',
     adjustPosition:'🔧 Изменить положение', adjustDone:'✓ Готово', alertApplyFirst:'Сначала примените изображение!',
@@ -437,7 +434,7 @@ const I18N = {
     srcFxHint:'Click the preview to disable processing',
     opacity:'Opacity', fitBtn:'⛶ Fit', hideBtn:'👁 Hide', showBtn:'👁 Show',
     imgProcessing:'Image processing', brightness:'Brightness', contrast:'Contrast', saturation:'Saturation',
-    sharpen:'Edge sharpen', posterize:'Posterize', off:'off', moreAdjustments:'More adjustments',
+    sharpen:'Edge sharpen', posterize:'Posterize', off:'off',
     ditherTitle:'Dithering (Floyd–Steinberg) for smoother transitions between tiles',
     dither:'Dithering (smoothing)', resetFx:'↺ Reset settings',
     adjustPosition:'🔧 Adjust position', adjustDone:'✓ Done', alertApplyFirst:'Apply the image first!',
@@ -1918,6 +1915,22 @@ document.getElementById('apply-img').addEventListener('click',()=>{
   render();
 });
 
+// Keeps each range slider's visual fill in sync with its value via a --fill
+// custom property (see input[type=range]::-webkit-slider-runnable-track).
+// Needed on: page load (initial value), every drag ('input' event), and
+// anywhere script code sets .value directly — a plain assignment doesn't
+// fire 'input', so the fill would otherwise silently go stale there.
+function updateRangeFill(el){
+  const min=parseFloat(el.min)||0, max=parseFloat(el.max)||100, val=parseFloat(el.value);
+  const pct = max>min ? ((val-min)/(max-min))*100 : 0;
+  el.style.setProperty('--fill', pct+'%');
+}
+function updateAllRangeFills(){ document.querySelectorAll('input[type=range]').forEach(updateRangeFill); }
+document.querySelectorAll('input[type=range]').forEach(el=>{
+  updateRangeFill(el);
+  el.addEventListener('input',()=>updateRangeFill(el));
+});
+
 // Wire up all postfx controls to live-update via reapplyImage(), coalesced to
 // at most once per animation frame — 'input' events on a range slider can
 // fire faster than the screen redraws, so calling the (still non-trivial)
@@ -1964,6 +1977,7 @@ document.getElementById('fx-reset-btn').addEventListener('click',()=>{
   document.getElementById('fx-sharpen').value=0; document.getElementById('fx-sharpen-val').textContent='0';
   document.getElementById('fx-posterize').value=0; fxPosterizeVal.textContent=t('off');
   fxDitherChk.checked=false; syncDitherToggle();
+  updateAllRangeFills();
   reapplyImage();
 });
 
@@ -2023,6 +2037,7 @@ function updateCounts(){
   const addGroup=(label,arr)=>{
   if(!arr.length)return;
   const h=document.createElement('li');
+  h.className='group-header';
   h.style.cssText='font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 0 3px;font-weight:700;border:none;';
   h.textContent=label;
   list.appendChild(h);
